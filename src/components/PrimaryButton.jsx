@@ -1,6 +1,8 @@
+
+
 /**
  * Reusable PrimaryButton component with hover animation elevation effects,
- * active click transitions, and a loading spinner indicator.
+ * blue-to-green gradient backgrounds, active click transitions, and a loading spinner.
  */
 export default function PrimaryButton({
   children,
@@ -15,7 +17,7 @@ export default function PrimaryButton({
       type={type}
       disabled={disabled || isLoading}
       aria-busy={isLoading ? 'true' : 'false'}
-      className={`relative w-full flex items-center justify-center px-4 py-3.5 border border-transparent text-sm font-semibold rounded-xl text-white bg-brand-blue hover:bg-blue-600 active:translate-y-[1px] active:scale-[0.99] hover:-translate-y-[1px] transition-all duration-300 ease-out focus:outline-none focus:ring-4 focus:ring-brand-blue/20 disabled:opacity-75 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:active:scale-100 disabled:hover:translate-y-0 shadow-[0_4px_12px_rgba(37,99,235,0.16)] hover:shadow-[0_8px_24px_rgba(37,99,235,0.28)] select-none cursor-pointer ${className}`}
+      className={`relative w-full flex items-center justify-center px-4 py-3.5 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 to-emerald-500 hover:from-blue-500 hover:to-emerald-400 active:translate-y-[1px] active:scale-[0.99] hover:-translate-y-[1px] transition-all duration-300 ease-out focus:outline-none focus:ring-4 focus:ring-brand-blue/20 disabled:opacity-75 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:active:scale-100 disabled:hover:translate-y-0 shadow-[0_4px_16px_rgba(37,99,235,0.2)] hover:shadow-[0_8px_24px_rgba(16,185,129,0.3)] select-none cursor-pointer ${className}`}
       {...props}
     >
       {isLoading ? (

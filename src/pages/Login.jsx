@@ -4,30 +4,32 @@ import LoginForm from '../components/LoginForm';
 /**
  * Login Page component orchestrating the split-screen design.
  * Left Side: Decorative telemetry SVG illustration of EV/grid battery charging metrics.
- * Right Side: Interactive LoginForm wrapped in a premium card.
+ * Right Side: Interactive LoginForm wrapped in a dark frosted glassmorphic card.
+ * Background: Seamless continuous dark layout.
  */
 export default function Login() {
   return (
-    <main className="min-h-screen w-full flex flex-col md:flex-row bg-slate-50 font-sans selection:bg-brand-blue/20 selection:text-brand-blue animate-fade-in">
+    <main className="min-h-screen w-full flex flex-col md:flex-row bg-slate-950 font-sans selection:bg-brand-blue/20 selection:text-brand-blue animate-fade-in relative overflow-hidden">
       
+      {/* Seamless Continuous Background Gradient Glows */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_35%,_rgba(37,99,235,0.15),_transparent_55%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_65%,_rgba(16,185,129,0.12),_transparent_50%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(37,99,235,0.06),_transparent_60%)] pointer-events-none" />
+      
+      {/* Seamless Continuous Grid Pattern */}
+      <div 
+        className="absolute inset-0 opacity-[0.02] pointer-events-none" 
+        style={{
+          backgroundImage: `radial-gradient(circle, #fff 1px, transparent 1px)`,
+          backgroundSize: '24px 24px'
+        }}
+      />
+
       {/* Left Column: Brand Marketing / EV Telemetry Illustration (Stacks on mobile) */}
       <section 
-        className="w-full md:w-[50%] lg:w-[53%] xl:w-[58%] bg-slate-950 relative overflow-hidden flex flex-col justify-between p-6 sm:p-10 md:p-12 text-white border-b md:border-b-0 md:border-r border-slate-900"
+        className="w-full md:w-[50%] lg:w-[53%] xl:w-[58%] relative z-10 flex flex-col justify-between p-6 sm:p-10 md:p-12 text-white border-b md:border-b-0 md:border-r border-white/5"
         aria-label="Platform Overview"
       >
-        {/* Dynamic Gradient Radial Background Glows */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,_rgba(37,99,235,0.14),_transparent_50%)] pointer-events-none" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_75%,_rgba(16,185,129,0.1),_transparent_50%)] pointer-events-none" />
-        
-        {/* Subtle grid pattern */}
-        <div 
-          className="absolute inset-0 opacity-[0.02] pointer-events-none" 
-          style={{
-            backgroundImage: `radial-gradient(circle, #fff 1px, transparent 1px)`,
-            backgroundSize: '24px 24px'
-          }}
-        />
-
         {/* Top Header: Brand Name */}
         <div className="relative z-10 flex items-center gap-3">
           <Logo />
@@ -149,27 +151,27 @@ export default function Login() {
         </div>
 
         {/* Footer Brand Notes */}
-        <div className="relative z-10 text-[9px] text-slate-500 font-semibold uppercase tracking-wider text-left border-t border-slate-900/60 pt-4 hidden md:block select-none">
+        <div className="relative z-10 text-[9px] text-slate-500 font-semibold uppercase tracking-wider text-left border-t border-white/5 pt-4 hidden md:block select-none">
           Shade Energy BMS SaaS • Cloud Interface v2.4.1
         </div>
       </section>
 
       {/* Right Column: Centered Login Card */}
       <section 
-        className="flex-1 flex flex-col justify-center items-center p-6 sm:p-12 md:p-16 lg:p-20 bg-slate-100/40 relative"
+        className="flex-1 flex flex-col justify-center items-center p-6 sm:p-12 md:p-16 lg:p-20 relative z-10"
         aria-label="Authentication portal"
       >
         <div className="w-full max-w-md flex flex-col justify-center items-center py-6 md:py-0">
           
-          {/* Glassmorphic/Light login card wrapper */}
-          <div className="w-full bg-white/95 backdrop-blur-md border border-slate-200/60 rounded-2xl p-6 sm:p-10 shadow-[0_16px_48px_rgba(15,23,42,0.06)] animate-slide-up-fade">
+          {/* Frosted Glassmorphic Dark Login Card */}
+          <div className="w-full bg-slate-900/40 backdrop-blur-xl border border-blue-500/15 rounded-[20px] p-6 sm:p-10 shadow-[0_24px_64px_rgba(0,0,0,0.4)] animate-slide-up-fade">
             
             {/* Header greetings */}
             <div className="text-left mb-6 select-none">
-              <h2 className="text-2xl sm:text-[26px] font-extrabold text-slate-900 tracking-tight leading-tight">
+              <h2 className="text-2xl sm:text-[26px] font-extrabold text-white tracking-tight leading-tight">
                 Welcome Back
               </h2>
-              <p className="text-slate-500 text-xs sm:text-sm mt-1">
+              <p className="text-slate-400 text-xs sm:text-sm mt-1.5">
                 Sign in to continue monitoring systems.
               </p>
             </div>
@@ -182,7 +184,7 @@ export default function Login() {
         </div>
 
         {/* Copyright Footer */}
-        <div className="w-full max-w-md text-center text-xs text-slate-450 font-semibold mt-8 border-t border-slate-200/40 pt-4 select-none">
+        <div className="w-full max-w-md text-center text-xs text-slate-500 font-semibold mt-8 border-t border-white/5 pt-4 select-none">
           &copy; {new Date().getFullYear()} Shade Energy. All rights reserved.
         </div>
       </section>

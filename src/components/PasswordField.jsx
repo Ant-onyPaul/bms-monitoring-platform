@@ -28,10 +28,10 @@ export default function PasswordField({
   return (
     <div className="relative w-full mb-5 text-left group">
       <div
-        className={`relative flex items-center border rounded-xl transition-all duration-300 ease-out bg-white
+        className={`relative flex items-center border rounded-xl transition-all duration-300 ease-out bg-slate-900/50 backdrop-blur-sm
           ${error 
-            ? 'border-red-500/80 shadow-[0_0_12px_rgba(239,68,68,0.08)] focus-within:border-red-500 focus-within:shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' 
-            : 'border-slate-200/95 hover:border-slate-300 focus-within:border-brand-blue/80 focus-within:shadow-[0_0_0_3px_rgba(37,99,235,0.08),0_0_0_6px_rgba(16,185,129,0.04)]'
+            ? 'border-red-500/80 shadow-[0_0_12px_rgba(239,68,68,0.15)] focus-within:border-red-500 focus-within:shadow-[0_0_0_3px_rgba(239,68,68,0.2)]' 
+            : 'border-white/10 hover:border-white/20 focus-within:border-brand-blue/50 focus-within:shadow-[0_0_0_3px_rgba(37,99,235,0.15),0_0_12px_rgba(16,185,129,0.08)]'
           }
         `}
       >
@@ -50,7 +50,7 @@ export default function PasswordField({
           autoComplete={autocomplete}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          className="w-full pl-2.5 pr-12 pt-6 pb-2.5 text-sm text-slate-850 bg-transparent border-0 outline-none transition-all placeholder-transparent focus:placeholder-slate-400/50"
+          className="w-full pl-2.5 pr-12 pt-6 pb-2.5 text-sm text-white bg-transparent border-0 outline-none transition-all placeholder-transparent focus:placeholder-slate-550/40"
           placeholder={label}
           aria-invalid={error ? 'true' : 'false'}
           aria-describedby={error ? `${id}-error` : undefined}
@@ -61,7 +61,7 @@ export default function PasswordField({
         <button
           type="button"
           onClick={toggleVisibility}
-          className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-600 focus:text-brand-blue outline-none rounded-md transition-colors cursor-pointer select-none"
+          className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-200 focus:text-brand-blue outline-none rounded-md transition-colors cursor-pointer select-none"
           aria-label={showPassword ? 'Hide password' : 'Show password'}
         >
           {/* Animated eye icon container */}
@@ -82,16 +82,16 @@ export default function PasswordField({
         {/* Floating Label */}
         <label
           htmlFor={id}
-          className={`absolute left-0 top-0 pointer-events-none transition-all duration-200 ease-out origin-left text-slate-400/90 text-sm ml-10
+          className={`absolute left-0 top-0 pointer-events-none transition-all duration-200 ease-out origin-left text-slate-400 text-sm ml-10
             ${isFloating 
-              ? 'translate-y-1.5 scale-[0.78] text-brand-blue/90 font-bold' 
+              ? 'translate-y-1.5 scale-[0.78] text-emerald-400 font-bold' 
               : 'translate-y-[15px] scale-100'
             }
-            ${error && isFloating ? '!text-red-500' : ''}
+            ${error && isFloating ? '!text-red-400' : ''}
           `}
         >
           {label}
-          {required && <span className="text-red-500/80 ml-0.5">*</span>}
+          {required && <span className="text-red-400/80 ml-0.5">*</span>}
         </label>
       </div>
 
@@ -99,7 +99,7 @@ export default function PasswordField({
       {error && (
         <p
           id={`${id}-error`}
-          className="mt-1.5 text-xs text-red-600 font-semibold flex items-center gap-1 pl-1.5 animate-fade-in"
+          className="mt-1.5 text-xs text-red-400 font-semibold flex items-center gap-1 pl-1.5 animate-fade-in"
           role="alert"
         >
           {error}

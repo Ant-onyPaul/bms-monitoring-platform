@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiMail } from 'react-icons/fi';
 import InputField from './InputField';
 import PasswordField from './PasswordField';
@@ -14,6 +15,7 @@ export default function LoginForm() {
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const validate = () => {
     const tempErrors = {};
@@ -39,12 +41,12 @@ export default function LoginForm() {
 
     setIsLoading(true);
 
-    // Simulate API request delay to showcase loading styles
+    // Simulate API request delay before navigating
     setTimeout(() => {
       console.log('Login credentials:', { email, password, rememberMe });
       setIsLoading(false);
-      alert('Mock login triggered successfully! Check developer console to inspect logs.');
-    }, 1500);
+      navigate('/dashboard');
+    }, 500);
   };
 
   return (

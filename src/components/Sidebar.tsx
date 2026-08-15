@@ -2,25 +2,46 @@ import { NavLink } from 'react-router-dom';
 import { 
   FiHome, 
   FiGrid, 
-  FiBatteryCharging, 
-  FiClock, 
-  FiAlertTriangle, 
+  FiServer, 
   FiUsers, 
-  FiSettings, 
-  FiLogOut 
+  FiLogOut,
+  FiBriefcase
 } from 'react-icons/fi';
 import Logo from './Logo';
+import { useAuth } from '../hooks/useAuth';
 
-export default function Sidebar({ isOpen, toggleSidebar }) {
-  const menuItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: FiHome },
-    { name: 'Module Overview', path: '/modules', icon: FiGrid },
-    { name: 'Cell Overview', path: '/cells', icon: FiBatteryCharging },
-    { name: 'History & Logs', path: '/history', icon: FiClock },
-    { name: 'Alerts', path: '/alerts', icon: FiAlertTriangle },
-    { name: 'Users', path: '/users', icon: FiUsers },
-    { name: 'Settings', path: '/settings', icon: FiSettings },
-  ];
+export default function Sidebar({ isOpen, toggleSidebar }: any) {
+  const { profile, signOut } = useAuth();
+  const role = profile?.role || 'customer';
+
+  // Define menus based on roles
+  const menus: Record<string, any[]> = {
+    admin: [
+      { name: 'Dashboard', path: '/admin/dashboard', icon: FiHome },
+      { name: 'Vendors', path: '/admin/vendors', icon: FiBriefcase },
+      { name: 'Customers', path: '/admin/customers', icon: FiUsers },
+      { name: 'Devices', path: '/admin/devices', icon: FiServer },
+    ],
+    vendor: [
+      { name: 'Dashboard', path: '/vendor/dashboard', icon: FiHome },
+      { name: 'Customers', path: '/vendor/customers', icon: FiUsers },
+      { name: 'Devices', path: '/vendor/devices', icon: FiServer },
+    ],
+    customer: [
+      { name: 'Dashboard', path: '/customer/dashboard', icon: FiHome },
+      { name: 'My Devices', path: '/customer/devices', icon: FiServer },
+    ]
+  };
+
+  const menuItems = menus[role] || menus.customer;
+
+  const handleLogout = async () => {
+    if (import.meta.env.VITE_MOCK_AUTH === 'true') {
+      window.location.href = '/login';
+    } else {
+      await signOut();
+    }
+  };
 
   return (
     <>
@@ -38,7 +59,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
         {/* Header/Logo */}
         <div className="h-16 flex items-center px-6 border-b border-slate-800 shrink-0">
           <Logo className="h-8 w-auto" />
-          <span className="ml-3 text-lg font-bold text-white tracking-wide">Shade Energy</span>
+          <span className="ml-3 text-lg font-bold text-white tracking-wide">BMS Platform</span>
         </div>
 
         {/* Navigation */}
@@ -52,7 +73,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                 className={({ isActive }) =>
                   `flex items-center px-4 py-3 rounded-r-lg mb-1 text-sm font-medium transition-all duration-300 group relative overflow-hidden ${
                     isActive
-                      ? 'bg-gradient-to-r from-brand-green/20 to-transparent text-brand-green shadow-[inset_4px_0_0_0_#10B981]'
+                      ? 'bg-gradient-to-r from-brand-blue/20 to-transparent text-brand-blue shadow-[inset_4px_0_0_0_#3B82F6]'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
                   }`
                 }
@@ -60,9 +81,9 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                 {({ isActive }) => (
                   <>
                     {isActive && (
-                      <div className="absolute top-0 left-0 w-1 h-full bg-brand-green shadow-[0_0_10px_#10B981] animate-pulseGlow"></div>
+                      <div className="absolute top-0 left-0 w-1 h-full bg-brand-blue shadow-[0_0_10px_#3B82F6] animate-pulseGlow"></div>
                     )}
-                    <Icon className={`w-5 h-5 mr-3 shrink-0 transition-transform duration-300 ${!isActive && 'group-hover:translate-x-1 group-hover:scale-110'} ${isActive ? 'drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : ''}`} />
+                    <Icon className={`w-5 h-5 mr-3 shrink-0 transition-transform duration-300 ${!isActive && 'group-hover:translate-x-1 group-hover:scale-110'} ${isActive ? 'drop-shadow-[0_0_8px_rgba(59,130,246,0.6)]' : ''}`} />
                     <span className={`transition-transform duration-300 ${!isActive && 'group-hover:translate-x-1'}`}>{item.name}</span>
                   </>
                 )}
@@ -73,13 +94,13 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
 
         {/* Logout */}
         <div className="p-4 border-t border-slate-800 shrink-0">
-          <NavLink
-            to="/login"
-            className="flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/50 transition-colors"
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/50 transition-colors"
           >
             <FiLogOut className="w-5 h-5 mr-3 shrink-0" />
             Logout
-          </NavLink>
+          </button>
         </div>
       </aside>
     </>

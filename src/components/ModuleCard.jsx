@@ -10,7 +10,7 @@ export default function ModuleCard({ module, isHighestImbalance }) {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate('/cells');
+    navigate('/cells', { state: { moduleId: module.id } });
   };
 
   return (

@@ -1,29 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
 import StatusBadge from '../../components/StatusBadge';
-import StatCard from '../../components/StatCard';
-import { FiThermometer, FiDroplet, FiZap, FiBattery, FiActivity } from 'react-icons/fi';
 import { Device, DeviceCurrentData } from '../../types/database.types';
 import { useDeviceRealtime } from '../../hooks/useDeviceRealtime';
+
+// BMS Components
+import { BmsOverview } from '../../components/bms/BmsOverview';
+import { ModuleOverview } from '../../components/bms/ModuleOverview';
+import { CellOverview } from '../../components/bms/CellOverview';
+import { BmsHistory } from '../../components/bms/BmsHistory';
+import { BmsAlerts } from '../../components/bms/BmsAlerts';
+
+type Tab = 'overview' | 'modules' | 'cells' | 'history' | 'alerts';
 
 export default function DeviceDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [selectedModuleId, setSelectedModuleId] = useState<string | undefined>();
   
-  // Mock device and data
-  const [device] = useState<Device>({
-    id: id || '1',
-    customer_id: '1',
-    device_identifier: 'BMS-A001',
-    name: 'Main HQ Battery',
-    device_type: 'BMS V1',
-    location: 'New York',
-    status: 'active',
-    last_seen_at: new Date().toISOString(),
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  });
+  // Mock device data repository
+  const MOCK_DEVICES: Device[] = [
+    { id: '1', customer_id: '1', device_identifier: 'BMS-A001', name: 'Main HQ Battery', device_type: 'BMS V1', location: 'New York', status: 'active', last_seen_at: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+    { id: '2', customer_id: '2', device_identifier: 'BMS-A002', name: 'Branch 1 Backup', device_type: 'BMS V2', location: 'Boston', status: 'active', last_seen_at: new Date(Date.now() - 3600000).toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  ];
+
+  // Resolve device based on route parameter
+  const device = MOCK_DEVICES.find(d => d.id === id) || MOCK_DEVICES[0];
 
   const initialCurrentData: DeviceCurrentData = {
     id: '1',
@@ -39,12 +43,21 @@ export default function DeviceDetails() {
     updated_at: new Date().toISOString()
   };
 
-  const { data: currentData } = useDeviceRealtime(device.id, initialCurrentData);
+  useDeviceRealtime(device.id, initialCurrentData);
+
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'modules', label: 'Modules' },
+    { id: 'cells', label: 'Cells' },
+    { id: 'history', label: 'History' },
+    { id: 'alerts', label: 'Alerts' }
+  ];
 
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-slide-up-fade">
-        <div className="flex justify-between items-start pb-2 border-b border-slate-700/50">
+        {/* Device Context Header */}
+        <div className="flex justify-between items-start pb-4">
           <div>
             <div className="flex items-center gap-3">
               <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-white transition-colors">
@@ -59,23 +72,43 @@ export default function DeviceDetails() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <StatCard title="Temperature" value={`${currentData?.temperature ?? '--'}`} unit="°C" icon={FiThermometer} colorClass="bg-orange-500/10 text-orange-500" />
-          <StatCard title="Humidity" value={`${currentData?.humidity ?? '--'}`} unit="%" icon={FiDroplet} colorClass="bg-blue-500/10 text-blue-500" />
-          <StatCard title="Voltage" value={`${currentData?.voltage ?? '--'}`} unit="V" icon={FiZap} colorClass="bg-yellow-500/10 text-yellow-500" />
-          <StatCard title="Current" value={`${currentData?.current ?? '--'}`} unit="A" icon={FiActivity} colorClass="bg-purple-500/10 text-purple-500" />
-          <StatCard title="Power" value={`${currentData?.power ?? '--'}`} unit="W" icon={FiBattery} colorClass="bg-brand-green/10 text-brand-green" />
+        {/* Local Tab Navigation */}
+        <div className="border-b border-slate-700/50 mb-6">
+          <nav className="-mb-px flex space-x-8">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200
+                  ${activeTab === tab.id
+                    ? 'border-brand-blue text-brand-blue'
+                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-500'}
+                `}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
         </div>
 
-        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 flex flex-col items-center justify-center min-h-[300px]">
-          <svg className="w-16 h-16 text-slate-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
-          <h3 className="text-xl font-medium text-white mb-2">Historical data not yet available</h3>
-          <p className="text-slate-400 text-center max-w-md">
-            Historical charts, curve compression, and long-term time-series storage will be available in a future version.
-          </p>
+        {/* Selected Workspace Content */}
+        <div className="pt-2">
+          {activeTab === 'overview' && <BmsOverview deviceId={device.id} />}
+          {activeTab === 'modules' && (
+            <ModuleOverview 
+              deviceId={device.id} 
+              onModuleSelect={(moduleId) => {
+                setSelectedModuleId(moduleId);
+                setActiveTab('cells');
+              }}
+            />
+          )}
+          {activeTab === 'cells' && <CellOverview deviceId={device.id} moduleId={selectedModuleId} />}
+          {activeTab === 'history' && <BmsHistory deviceId={device.id} />}
+          {activeTab === 'alerts' && <BmsAlerts deviceId={device.id} />}
         </div>
+
       </div>
     </DashboardLayout>
   );

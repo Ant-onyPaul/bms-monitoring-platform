@@ -21,10 +21,10 @@ export default function ModuleSelector({ modules, selectedModule, onSelect }: Mo
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="inline-flex justify-between items-center w-56 rounded-xl glass-card px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm hover:bg-black/5 focus:outline-none transition-all duration-300"
+          className="inline-flex justify-between items-center w-56 rounded-xl glass-card px-4 py-3 text-sm font-semibold text-foreground shadow-sm hover:bg-black/5 focus:outline-none transition-all duration-300"
         >
           {selectedModule.name}
-          <FiChevronDown className={`ml-2 -mr-1 h-5 w-5 text-slate-600 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+          <FiChevronDown className={`ml-2 -mr-1 h-5 w-5 text-muted-foreground transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
         </button>
       </div>
 
@@ -39,7 +39,7 @@ export default function ModuleSelector({ modules, selectedModule, onSelect }: Mo
                   setIsOpen(false);
                 }}
                 className={`block w-full text-left px-4 py-2.5 text-sm transition-colors duration-200 ${
-                  selectedModule.id === module.id ? 'bg-brand-blue/20 text-brand-blue font-medium' : 'text-slate-700 hover:bg-black/10 hover:text-slate-900'
+                  selectedModule.id === module.id ? 'bg-blue-500/20 text-blue-400 font-medium' : 'text-foreground/90 hover:bg-muted/50 hover:text-foreground'
                 }`}
               >
                 {module.name}

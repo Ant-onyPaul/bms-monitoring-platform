@@ -19,15 +19,15 @@ export default function CellCard({ cell, highlightType }: CellCardProps) {
   const isHighest = highlightType === 'highest';
   const isLowest = highlightType === 'lowest';
 
-  let borderClass = 'border-slate-200';
-  let bgClass = 'bg-white hover:bg-slate-50';
+  let borderClass = 'border-border';
+  let bgClass = 'bg-card hover:bg-muted/50';
 
   if (isHighest) {
-    borderClass = 'border-green-200';
-    bgClass = 'bg-green-50/50';
+    borderClass = 'border-[#22C55E]/50';
+    bgClass = 'bg-[#22C55E]/10';
   } else if (isLowest) {
-    borderClass = 'border-orange-200';
-    bgClass = 'bg-orange-50/50';
+    borderClass = 'border-orange-500/50';
+    bgClass = 'bg-orange-500/10';
   }
 
   return (
@@ -37,9 +37,9 @@ export default function CellCard({ cell, highlightType }: CellCardProps) {
       {/* Header section */}
       <div className="flex justify-between items-start mb-3">
         <div>
-          <h3 className="text-sm font-bold text-slate-700 tracking-tight">{cell.name}</h3>
+          <h3 className="text-sm font-bold text-foreground/90 tracking-tight">{cell.name}</h3>
           {(isHighest || isLowest) && (
-            <div className={`flex items-center gap-1 mt-1 text-[10px] font-bold uppercase tracking-wider ${isHighest ? 'text-brand-green' : 'text-orange-500'}`}>
+            <div className={`flex items-center gap-1 mt-1 text-[10px] font-bold uppercase tracking-wider ${isHighest ? 'text-[#22C55E]' : 'text-orange-500'}`}>
               {isHighest ? <FiArrowUp className="w-3 h-3" /> : <FiArrowDown className="w-3 h-3" />}
               {isHighest ? 'Highest Cell' : 'Lowest Cell'}
             </div>
@@ -50,10 +50,10 @@ export default function CellCard({ cell, highlightType }: CellCardProps) {
 
       {/* Voltage display */}
       <div className="flex items-baseline mb-4">
-        <span className={`text-2xl font-extrabold tracking-tight ${isHighest ? 'text-brand-green' : isLowest ? 'text-orange-500' : 'text-slate-900'}`}>
+        <span className={`text-2xl font-extrabold tracking-tight ${isHighest ? 'text-[#22C55E]' : isLowest ? 'text-orange-500' : 'text-foreground'}`}>
           {cell.voltage}
         </span>
-        <span className="ml-1 text-xs text-slate-500 font-medium">mV</span>
+        <span className="ml-1 text-xs text-muted-foreground font-medium">mV</span>
       </div>
 
       {/* Footer */}

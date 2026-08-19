@@ -1,31 +1,52 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 @theme {
-  --color-brand-blue: #2563EB; 
+  /* Design System Colors */
+  --color-primary: #111827;
+  --color-on-primary: #FFFFFF;
+  --color-secondary: #E5E7EB;
+  --color-on-secondary: #111827;
+  --color-accent: #10B981;
+  --color-on-accent: #FFFFFF;
+  --color-background: #F4F4F5;
+  --color-foreground: #09090B;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #09090B;
+  --color-muted: #F4F4F5;
+  --color-muted-foreground: #71717A;
+  --color-border: #E4E4E7;
+  --color-destructive: #EF4444;
+  --color-on-destructive: #FFFFFF;
+  --color-ring: #10B981;
+
+  /* Legacy aliases (to prevent immediate breakage) */
+  --color-brand-blue: #3B82F6; 
   --color-brand-green: #10B981;
-  --color-brand-dark: #0F172A;
-  --color-brand-light: #F8FAFC;
-  
-  --color-bg-dark: #F8FAFC; /* Updated to light gray */
+  --color-brand-amber: #F59E0B;
+  --color-brand-dark: #111827;
+  --color-brand-light: #F9FAFB;
+  --color-bg-dark: #F4F4F5;
   --color-sidebar-dark: #FFFFFF;
   --color-card-dark: #FFFFFF;
-  --color-accent-cyan: #0EA5E9;
-  --color-text-secondary: #64748B;
-  --color-text-primary: #0F172A;
-
-  --color-alert-info: #3B82F6;
-  --color-alert-warning: #F59E0B;
-  --color-alert-critical: #EF4444;
-  --color-alert-success: #10B981;
 }
 
 @layer base {
   body {
-    background-color: var(--color-bg-dark);
-    color: var(--color-text-primary);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .label-technical {
+    @apply text-[10px] uppercase tracking-widest font-bold text-muted-foreground;
+  }
+  .data-technical {
+    @apply font-['JetBrains_Mono'] tracking-tight;
   }
 }
 
@@ -73,18 +94,20 @@
   animation: scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Premium Card Style - Replacing Glassmorphism */
+/* Premium Card Style */
 .premium-card {
-  background-color: #FFFFFF;
-  border: 1px solid #E2E8F0;
-  border-radius: 8px;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease-in-out;
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 200ms ease-in-out;
+  color: var(--color-card-foreground);
 }
 
 .premium-card:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border-color: #CBD5E1;
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  border-color: #475569;
 }
 
 /* Eye icon toggle rotational transitions */
@@ -105,5 +128,8 @@
   .animate-slide-up-fade,
   .animate-fade-in {
     animation: none !important;
+  }
+  .premium-card:hover {
+    transform: none !important;
   }
 }

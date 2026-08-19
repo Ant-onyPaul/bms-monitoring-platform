@@ -16,20 +16,20 @@ export default function SensorCard({ sensor }: SensorCardProps) {
   const isAbnormal = sensor.status === 'Warning' || sensor.status === 'Fault';
 
   return (
-    <div className={`premium-card p-4 transition-all duration-200 ${isAbnormal ? 'border-yellow-300 bg-yellow-50' : 'border-slate-200'}`}>
+    <div className={`premium-card p-4 transition-all duration-200 ${isAbnormal ? 'border-yellow-500/50 bg-yellow-500/10' : 'border-border'}`}>
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
-          <FiThermometer className={isAbnormal ? 'text-yellow-600' : 'text-slate-500'} />
-          <h4 className="text-sm font-semibold text-slate-700">{sensor.name}</h4>
+          <FiThermometer className={isAbnormal ? 'text-yellow-500' : 'text-muted-foreground'} />
+          <h4 className="text-sm font-semibold text-foreground/90">{sensor.name}</h4>
         </div>
         <HealthBadge status={sensor.status} />
       </div>
 
       <div className="flex items-baseline">
-        <span className={`text-2xl font-bold ${isAbnormal ? 'text-yellow-600' : 'text-slate-900'}`}>
+        <span className={`text-2xl font-bold ${isAbnormal ? 'text-yellow-500' : 'text-foreground'}`}>
           {sensor.temperature}
         </span>
-        <span className="ml-1 text-xs text-slate-500">°C</span>
+        <span className="ml-1 text-xs text-muted-foreground">°C</span>
       </div>
     </div>
   );

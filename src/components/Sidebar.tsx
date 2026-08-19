@@ -48,18 +48,18 @@ export default function Sidebar({ isOpen, toggleSidebar }: any) {
       {/* Mobile backdrop */}
       {isOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-slate-900/50 lg:hidden transition-opacity"
+          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden transition-opacity"
           onClick={toggleSidebar}
         />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto ${isOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto ${isOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col`}>
         
         {/* Header/Logo */}
-        <div className="h-16 flex items-center px-6 border-b border-slate-100 shrink-0">
-          <span className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-gradient-to-br from-brand-green to-brand-blue flex items-center justify-center">
+        <div className="h-16 flex items-center px-6 border-b border-border shrink-0">
+          <span className="text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
+            <div className="w-6 h-6 rounded-sm bg-[#10B981] flex items-center justify-center">
                <span className="text-white text-xs font-bold">S</span>
             </div>
             SHADE ENERGY
@@ -77,17 +77,17 @@ export default function Sidebar({ isOpen, toggleSidebar }: any) {
                 className={({ isActive }) =>
                   `flex items-center px-3 py-2.5 rounded-md text-sm font-medium transition-colors duration-200 group relative ${
                     isActive
-                      ? 'bg-slate-50 text-brand-green'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      ? 'bg-[#10B981]/10 text-[#10B981]'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
                     {isActive && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-brand-green rounded-r-full"></div>
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[#10B981] rounded-r-sm"></div>
                     )}
-                    <Icon className={`w-5 h-5 mr-3 shrink-0 ${isActive ? 'text-brand-green' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                    <Icon className={`w-5 h-5 mr-3 shrink-0 ${isActive ? 'text-[#10B981]' : 'text-muted-foreground group-hover:text-foreground'}`} />
                     <span>{item.name}</span>
                   </>
                 )}
@@ -97,12 +97,12 @@ export default function Sidebar({ isOpen, toggleSidebar }: any) {
         </nav>
 
         {/* Logout */}
-        <div className="p-4 border-t border-slate-100 shrink-0">
+        <div className="p-4 border-t border-border shrink-0">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center px-3 py-2.5 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+            className="w-full flex items-center px-3 py-2.5 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
           >
-            <FiLogOut className="w-5 h-5 mr-3 shrink-0 text-slate-400" />
+            <FiLogOut className="w-5 h-5 mr-3 shrink-0 text-muted-foreground" />
             Logout
           </button>
         </div>

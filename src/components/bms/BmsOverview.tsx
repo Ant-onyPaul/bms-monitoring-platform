@@ -32,18 +32,18 @@ export function BmsOverview({ deviceId }: BmsOverviewProps) {
       {/* Dashboard Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">System Overview</h2>
-          <p className="text-slate-500 mt-1 text-sm">Realtime vitals for device <span className="font-medium text-slate-700">{deviceId || 'BMS-101'}</span></p>
+          <h2 className="text-2xl font-bold text-foreground tracking-tight">System Overview</h2>
+          <p className="text-muted-foreground mt-1 text-sm">Realtime vitals for device <span className="font-medium text-foreground/90">{deviceId || 'BMS-101'}</span></p>
         </div>
         <div className="flex flex-col md:items-end gap-1">
-          <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full border border-green-100">
+          <div className="flex items-center gap-2 bg-[#22C55E]/10 px-3 py-1 rounded-full border border-[#22C55E]/30">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-green opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-green"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#22C55E]"></span>
             </span>
-            <span className="text-xs font-semibold text-brand-green uppercase tracking-widest">Live</span>
+            <span className="text-xs font-semibold text-[#22C55E] uppercase tracking-widest">Live</span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">{currentDate}</p>
+          <p className="text-xs text-muted-foreground mt-1">{currentDate}</p>
         </div>
       </div>
       
@@ -53,16 +53,16 @@ export function BmsOverview({ deviceId }: BmsOverviewProps) {
           <StatusCard status="Normal" />
         </div>
         <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <StatCard title="Total Voltage" value="52.8" unit="V" icon={FiActivity} colorClass="bg-blue-50 text-brand-blue border border-blue-100" />
-          <StatCard title="Total Current" value="18.6" unit="A" icon={FiZap} colorClass="bg-emerald-50 text-brand-green border border-emerald-100" />
-          <StatCard title="Power Output" value="0.98" unit="kW" icon={FiBattery} colorClass="bg-indigo-50 text-indigo-600 border border-indigo-100" />
+          <StatCard title="Total Voltage" value="52.8" unit="V" icon={FiActivity} colorClass="bg-blue-500/10 text-blue-400 border border-blue-500/30" />
+          <StatCard title="Total Current" value="18.6" unit="A" icon={FiZap} colorClass="bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/30" />
+          <StatCard title="Power Output" value="0.98" unit="kW" icon={FiBattery} colorClass="bg-indigo-500/10 text-indigo-400 border border-indigo-500/30" />
         </div>
       </div>
 
       {/* Second Row: Gauges and Detailed State */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <GaugeCard title="State of Charge" percentage={82} color="text-brand-blue" />
-        <GaugeCard title="State of Health" percentage={97} color="text-brand-green" />
+        <GaugeCard title="State of Charge" percentage={82} color="text-blue-400" />
+        <GaugeCard title="State of Health" percentage={97} color="text-[#22C55E]" />
         <TemperatureCard max={42} min={28} />
         <ProtectionCard state="Connected" />
       </div>
@@ -70,17 +70,17 @@ export function BmsOverview({ deviceId }: BmsOverviewProps) {
       {/* Third Row: Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">
-          <ChartCard title="SOC Trend (24h)" type="line" data={socTrendData} color="#2563EB" />
+          <ChartCard title="SOC Trend (24h)" type="line" data={socTrendData} color="#60A5FA" />
         </div>
         <div className="lg:col-span-2">
-          <ChartCard title="Cell Voltage Distribution" type="bar" data={cellVoltageData} color="#10B981" />
+          <ChartCard title="Cell Voltage Distribution" type="bar" data={cellVoltageData} color="#22C55E" />
         </div>
       </div>
       
       {/* Fourth Row: Temperature Chart & Actions/Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-            <ChartCard title="Temperature Trend" type="line" data={tempTrendData} color="#F59E0B" />
+            <ChartCard title="Temperature Trend" type="line" data={tempTrendData} color="#FBBF24" />
         </div>
         <div className="lg:col-span-1 flex flex-col gap-6">
           <AlertCard alerts={alertsData} />

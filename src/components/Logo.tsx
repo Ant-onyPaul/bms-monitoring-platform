@@ -67,7 +67,7 @@ export default function Logo({ className = "", showText = false }) {
       </div>
 
       {showText && (
-        <span className="font-sans font-bold tracking-tight text-slate-900 text-xl">
+        <span className="font-sans font-bold tracking-tight text-foreground text-xl">
           Shade<span className="bg-gradient-to-r from-blue-600 to-emerald-500 bg-clip-text text-transparent"> Energy</span>
         </span>
       )}

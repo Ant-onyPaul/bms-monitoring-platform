@@ -8,7 +8,7 @@ export default function DashboardLayout({ children }) {
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans text-slate-900 overflow-hidden relative">
+    <div className="flex h-screen bg-background text-foreground overflow-hidden relative">
       {/* Sidebar Component */}
       <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 

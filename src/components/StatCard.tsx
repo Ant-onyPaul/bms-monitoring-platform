@@ -5,10 +5,10 @@ export default function StatCard({ title, value, unit, icon: Icon, colorClass })
         <Icon className="w-6 h-6" />
       </div>
       <div className="ml-4 relative z-10">
-        <p className="text-xs text-slate-500 font-medium tracking-wide uppercase">{title}</p>
+        <p className="text-xs text-muted-foreground font-medium tracking-wide uppercase">{title}</p>
         <div className="flex items-baseline mt-1">
-          <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{value}</h3>
-          {unit && <span className="ml-1 font-semibold text-slate-500">{unit}</span>}
+          <h3 className="text-2xl font-bold text-foreground tracking-tight">{value}</h3>
+          {unit && <span className="ml-1 font-semibold text-muted-foreground">{unit}</span>}
         </div>
       </div>
     </div>

@@ -16,21 +16,17 @@ export default function SensorCard({ sensor }: SensorCardProps) {
   const isAbnormal = sensor.status === 'Warning' || sensor.status === 'Fault';
 
   return (
-    <div className={`glass-card rounded-xl p-4 relative overflow-hidden transition-all duration-300 ${isAbnormal ? 'border-yellow-500/30' : 'border-transparent hover:border-white/10'}`}>
-      {isAbnormal && (
-        <div className="absolute top-0 left-0 w-full h-full bg-yellow-500/5 blur-xl pointer-events-none"></div>
-      )}
-      
-      <div className="flex justify-between items-start mb-2 relative z-10">
+    <div className={`premium-card p-4 transition-all duration-200 ${isAbnormal ? 'border-yellow-300 bg-yellow-50' : 'border-slate-200'}`}>
+      <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
-          <FiThermometer className={isAbnormal ? 'text-yellow-500' : 'text-slate-600'} />
-          <h4 className="text-sm font-semibold text-slate-300">{sensor.name}</h4>
+          <FiThermometer className={isAbnormal ? 'text-yellow-600' : 'text-slate-500'} />
+          <h4 className="text-sm font-semibold text-slate-700">{sensor.name}</h4>
         </div>
         <HealthBadge status={sensor.status} />
       </div>
 
-      <div className="flex items-baseline relative z-10">
-        <span className={`text-2xl font-bold ${isAbnormal ? 'text-yellow-500' : 'text-slate-900'}`}>
+      <div className="flex items-baseline">
+        <span className={`text-2xl font-bold ${isAbnormal ? 'text-yellow-600' : 'text-slate-900'}`}>
           {sensor.temperature}
         </span>
         <span className="ml-1 text-xs text-slate-500">°C</span>

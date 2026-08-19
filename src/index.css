@@ -1,20 +1,32 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-blue: #10B981; 
+  --color-brand-blue: #2563EB; 
   --color-brand-green: #10B981;
-  --color-brand-dark: #FFFFFF;
-  --color-brand-light: #000000;
+  --color-brand-dark: #0F172A;
+  --color-brand-light: #F8FAFC;
   
-  --color-bg-dark: #FAFAFA;
+  --color-bg-dark: #F8FAFC; /* Updated to light gray */
   --color-sidebar-dark: #FFFFFF;
-  --color-card-dark: #F3F4F6;
-  --color-accent-cyan: #10B981;
-  --color-text-secondary: #475569;
+  --color-card-dark: #FFFFFF;
+  --color-accent-cyan: #0EA5E9;
+  --color-text-secondary: #64748B;
+  --color-text-primary: #0F172A;
 
-  /* Glassmorphism utility variables */
-  --color-glass-bg: rgba(255, 255, 255, 0.8);
-  --color-glass-border: rgba(0, 0, 0, 0.1);
+  --color-alert-info: #3B82F6;
+  --color-alert-warning: #F59E0B;
+  --color-alert-critical: #EF4444;
+  --color-alert-success: #10B981;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-bg-dark);
+    color: var(--color-text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
 /* Custom keyframes for premium transitions */
@@ -34,27 +46,6 @@
   }
 }
 
-@keyframes floatSubtle {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-4px); }
-}
-
-@keyframes pulseGlow {
-  0%, 100% { 
-    opacity: 0.4; 
-    filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.35)); 
-  }
-  50% { 
-    opacity: 0.8; 
-    filter: drop-shadow(0 0 16px rgba(16, 185, 129, 0.65)); 
-  }
-}
-
-@keyframes flow {
-  from { stroke-dashoffset: 24; }
-  to { stroke-dashoffset: 0; }
-}
-
 @keyframes slideInLeft {
   from { opacity: 0; transform: translateX(-16px); }
   to { opacity: 1; transform: translateX(0); }
@@ -67,58 +58,33 @@
 
 /* Animation utilities */
 .animate-fade-in {
-  animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-slide-up-fade {
-  animation: slideUpFade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-float-subtle {
-  animation: floatSubtle 7s ease-in-out infinite;
-}
-
-.animate-pulse-glow {
-  animation: pulseGlow 4s ease-in-out infinite;
-}
-
-.animate-flow {
-  stroke-dasharray: 8, 4;
-  animation: flow 2s linear infinite;
+  animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-slide-in-left {
-  animation: slideInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-scale-up {
-  animation: scaleUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Glassmorphism Classes */
-.glass-panel {
-  background-color: var(--color-glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--color-glass-border);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
-  border-radius: 12px;
+/* Premium Card Style - Replacing Glassmorphism */
+.premium-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease-in-out;
 }
 
-.glass-card {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(250, 250, 250, 0.8) 100%);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  border-radius: 12px;
-}
-
-.glass-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(0, 0, 0, 0.12);
+.premium-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-color: #CBD5E1;
 }
 
 /* Eye icon toggle rotational transitions */
@@ -136,15 +102,8 @@
     scroll-behavior: auto !important;
     transform: none !important;
   }
-  .animate-float-subtle,
-  .animate-pulse-glow,
-  .animate-flow,
   .animate-slide-up-fade,
   .animate-fade-in {
     animation: none !important;
-  }
-  /* Keep standard visibility for flowing dashed lines without movement */
-  .animate-flow {
-    stroke-dasharray: none !important;
   }
 }

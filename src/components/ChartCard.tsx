@@ -4,22 +4,22 @@ export default function ChartCard({ title, type, data, color }) {
     <div className="glass-card rounded-2xl p-6 h-72 flex flex-col group relative overflow-hidden">
       <div className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-[80px] opacity-5 -translate-y-1/2 translate-x-1/2 transition-opacity duration-1000 group-hover:opacity-10`} style={{ backgroundColor: color }}></div>
       
-      <h3 className="text-xs font-semibold text-slate-400 mb-6 uppercase tracking-widest relative z-10">{title}</h3>
+      <h3 className="text-xs font-semibold text-slate-600 mb-6 uppercase tracking-widest relative z-10">{title}</h3>
       <div className="flex-1 relative w-full flex items-end justify-between px-2 pb-2 z-10">
         {/* Placeholder Grid lines */}
-        <div className="absolute inset-0 border-b border-slate-700/30"></div>
-        <div className="absolute inset-y-0 left-0 right-0 flex flex-col justify-between opacity-10">
-          <div className="w-full h-px bg-slate-500"></div>
-          <div className="w-full h-px bg-slate-500"></div>
-          <div className="w-full h-px bg-slate-500"></div>
-          <div className="w-full h-px bg-slate-500"></div>
+        <div className="absolute inset-0 border-b border-slate-200"></div>
+        <div className="absolute inset-y-0 left-0 right-0 flex flex-col justify-between opacity-30">
+          <div className="w-full h-px bg-slate-300"></div>
+          <div className="w-full h-px bg-slate-300"></div>
+          <div className="w-full h-px bg-slate-300"></div>
+          <div className="w-full h-px bg-slate-300"></div>
         </div>
 
         {/* Mock Chart Data visualization */}
         {type === 'bar' && data.map((val, i) => (
           <div key={i} className="relative z-10 w-full mx-1 rounded-t-sm transition-all duration-1000 ease-in-out hover:opacity-80 group/bar cursor-pointer" 
                style={{ height: `${val}%`, backgroundColor: color, boxShadow: `0 -4px 12px ${color}33` }}>
-            <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-bold text-white bg-slate-800 px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap shadow-lg">{val}</span>
+            <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-bold text-slate-900 bg-white border border-slate-200 px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap shadow-sm">{val}</span>
           </div>
         ))}
 

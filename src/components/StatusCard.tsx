@@ -29,7 +29,7 @@ export default function StatusCard({ status }) {
           )}
         </div>
         <div className="ml-5">
-          <p className="text-2xl font-bold text-white tracking-tight">{config.text}</p>
+          <p className="text-2xl font-bold text-slate-900 tracking-tight">{config.text}</p>
           <p className="text-xs sm:text-sm text-slate-400 mt-1">All modules operating within normal parameters.</p>
         </div>
       </div>

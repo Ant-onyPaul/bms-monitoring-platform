@@ -18,7 +18,7 @@ export default function ProtectionCard({ state }) {
         </div>
         
         <div className="ml-4">
-          <p className="text-2xl font-bold text-white tracking-tight">{isConnected ? 'Connected' : 'Disconnected'}</p>
+          <p className="text-2xl font-bold text-slate-900 tracking-tight">{isConnected ? 'Connected' : 'Disconnected'}</p>
           <p className="text-[10px] text-brand-blue font-medium mt-1 uppercase tracking-widest">Contactors engaged</p>
         </div>
       </div>

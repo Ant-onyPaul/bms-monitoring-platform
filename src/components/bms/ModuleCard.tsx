@@ -45,7 +45,7 @@ export default function ModuleCard({ module, isHighestImbalance, onSelect }: Mod
           <div className={`p-2.5 rounded-lg flex items-center justify-center ${isHighestImbalance ? 'bg-orange-500/10 text-orange-400' : 'bg-brand-blue/10 text-brand-blue'}`}>
             <FiBattery className="w-5 h-5" />
           </div>
-          <h3 className="text-lg font-bold text-white tracking-tight">{module.name}</h3>
+          <h3 className="text-lg font-bold text-slate-900 tracking-tight">{module.name}</h3>
         </div>
         <HealthBadge status={module.health} />
       </div>
@@ -65,7 +65,7 @@ export default function ModuleCard({ module, isHighestImbalance, onSelect }: Mod
 
       {/* Footer / Comm Status */}
       <div className="pt-4 border-t border-white/5 flex justify-between items-center mt-auto relative z-10">
-        <span className="text-[10px] sm:text-xs text-slate-400 font-medium">Comm. Status</span>
+        <span className="text-[10px] sm:text-xs text-slate-600 font-medium">Comm. Status</span>
         <CommunicationBadge active={module.communication === 'Active'} />
       </div>
     </div>

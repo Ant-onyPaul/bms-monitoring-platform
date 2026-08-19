@@ -23,14 +23,14 @@ export default function SensorCard({ sensor }: SensorCardProps) {
       
       <div className="flex justify-between items-start mb-2 relative z-10">
         <div className="flex items-center gap-2">
-          <FiThermometer className={isAbnormal ? 'text-yellow-500' : 'text-slate-400'} />
+          <FiThermometer className={isAbnormal ? 'text-yellow-500' : 'text-slate-600'} />
           <h4 className="text-sm font-semibold text-slate-300">{sensor.name}</h4>
         </div>
         <HealthBadge status={sensor.status} />
       </div>
 
       <div className="flex items-baseline relative z-10">
-        <span className={`text-2xl font-bold ${isAbnormal ? 'text-yellow-500' : 'text-white'}`}>
+        <span className={`text-2xl font-bold ${isAbnormal ? 'text-yellow-500' : 'text-slate-900'}`}>
           {sensor.temperature}
         </span>
         <span className="ml-1 text-xs text-slate-500">°C</span>

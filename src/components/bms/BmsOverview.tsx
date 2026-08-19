@@ -32,8 +32,8 @@ export function BmsOverview({ deviceId }: BmsOverviewProps) {
       {/* Dashboard Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight">System Overview</h2>
-          <p className="text-slate-400 mt-1 text-sm sm:text-base">Realtime vitals for device {deviceId}</p>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">System Overview</h2>
+          <p className="text-slate-600 mt-1 text-sm sm:text-base">Realtime vitals for device {deviceId}</p>
         </div>
         <div className="flex flex-col md:items-end gap-1">
           <div className="flex items-center gap-2">

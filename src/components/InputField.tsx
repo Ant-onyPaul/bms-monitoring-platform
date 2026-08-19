@@ -23,16 +23,16 @@ export default function InputField({
   return (
     <div className="relative w-full mb-5 text-left group">
       <div
-        className={`relative flex items-center border rounded-xl transition-all duration-300 ease-out bg-slate-900/50 backdrop-blur-sm
+        className={`relative flex items-center border rounded-xl transition-all duration-300 ease-out bg-white/50 backdrop-blur-sm
           ${error 
             ? 'border-red-500/80 shadow-[0_0_12px_rgba(239,68,68,0.15)] focus-within:border-red-500 focus-within:shadow-[0_0_0_3px_rgba(239,68,68,0.2)]' 
-            : 'border-white/10 hover:border-white/20 focus-within:border-brand-blue/50 focus-within:shadow-[0_0_0_3px_rgba(37,99,235,0.15),0_0_12px_rgba(16,185,129,0.08)]'
+            : 'border-slate-300 hover:border-slate-400 focus-within:border-brand-blue/50 focus-within:shadow-[0_0_0_3px_rgba(37,99,235,0.15),0_0_12px_rgba(16,185,129,0.08)]'
           }
         `}
       >
         {/* Left Icon (Optional) */}
         {Icon && (
-          <div className={`pl-4 transition-colors duration-300 ${isFocused ? 'text-brand-blue' : 'text-slate-400'} pointer-events-none`}>
+          <div className={`pl-4 transition-colors duration-300 ${isFocused ? 'text-brand-blue' : 'text-slate-500'} pointer-events-none`}>
             <Icon className="w-5 h-5" />
           </div>
         )}
@@ -47,7 +47,7 @@ export default function InputField({
           autoComplete={autocomplete}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          className={`w-full px-4 pt-6 pb-2.5 text-sm text-white bg-transparent border-0 outline-none transition-all placeholder-transparent focus:placeholder-slate-550/40
+          className={`w-full px-4 pt-6 pb-2.5 text-sm text-slate-900 bg-transparent border-0 outline-none transition-all placeholder-transparent focus:placeholder-slate-400
             ${Icon ? 'pl-2.5' : 'pl-4'}
           `}
           placeholder={label}
@@ -59,10 +59,10 @@ export default function InputField({
         {/* Floating Label */}
         <label
           htmlFor={id}
-          className={`absolute left-0 top-0 pointer-events-none transition-all duration-200 ease-out origin-left text-slate-400 text-sm
+          className={`absolute left-0 top-0 pointer-events-none transition-all duration-200 ease-out origin-left text-slate-500 text-sm
             ${Icon ? 'ml-[42px]' : 'ml-4'}
             ${isFloating 
-              ? 'translate-y-1.5 scale-[0.78] text-emerald-400 font-bold' 
+              ? 'translate-y-1.5 scale-[0.78] text-brand-green font-bold' 
               : 'translate-y-[15px] scale-100'
             }
             ${error && isFloating ? '!text-red-400' : ''}

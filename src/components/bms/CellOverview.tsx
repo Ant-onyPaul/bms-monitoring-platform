@@ -82,8 +82,8 @@ export function CellOverview({ deviceId, moduleId }: CellOverviewProps) {
       {/* Page Header & Module Selector */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
         <div className="max-w-2xl">
-          <h2 className="text-3xl font-extrabold text-white tracking-tight mb-2">Cell Overview</h2>
-          <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
+          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Cell Overview</h2>
+          <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
             Monitor every battery cell inside the selected battery module{deviceId ? ` for device ${deviceId}` : ''}.
           </p>
         </div>
@@ -142,7 +142,7 @@ export function CellOverview({ deviceId, moduleId }: CellOverviewProps) {
 
       {/* NTC Sensors Grid */}
       <div className="mb-10">
-        <h3 className="text-lg font-bold text-white mb-4">Temperature Sensors (NTC)</h3>
+        <h3 className="text-lg font-bold text-slate-900 mb-4">Temperature Sensors (NTC)</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {sensors.map(sensor => (
             <SensorCard key={sensor.id} sensor={sensor} />
@@ -152,7 +152,7 @@ export function CellOverview({ deviceId, moduleId }: CellOverviewProps) {
 
       {/* Cell Grid */}
       <div>
-        <h3 className="text-lg font-bold text-white mb-4">Cell Voltages</h3>
+        <h3 className="text-lg font-bold text-slate-900 mb-4">Cell Voltages</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
           {cells.map((cell) => {
             let highlightType: 'highest' | 'lowest' | null = null;

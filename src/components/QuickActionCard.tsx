@@ -24,8 +24,8 @@ export default function QuickActionCard() {
                   : 'bg-slate-900/40 border-white/5 hover:bg-slate-800/80 hover:border-white/10'
               }`}
             >
-              <Icon className={`w-6 h-6 mb-2 transition-transform duration-300 group-hover/btn:scale-110 ${action.primary ? 'text-brand-blue drop-shadow-[0_0_5px_rgba(37,99,235,0.5)]' : 'text-slate-400 group-hover/btn:text-white'}`} />
-              <span className={`text-xs font-medium transition-colors ${action.primary ? 'text-brand-blue' : 'text-slate-300 group-hover/btn:text-white'}`}>{action.label}</span>
+              <Icon className={`w-6 h-6 mb-2 transition-transform duration-300 group-hover/btn:scale-110 ${action.primary ? 'text-brand-green drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]' : 'text-slate-600 group-hover/btn:text-slate-900'}`} />
+              <span className={`text-xs font-medium transition-colors ${action.primary ? 'text-brand-green' : 'text-slate-700 group-hover/btn:text-slate-900'}`}>{action.label}</span>
             </button>
           );
         })}

@@ -14,7 +14,7 @@ export default function TemperatureCard({ max, min }) {
         <div>
           <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1 font-semibold">Maximum</p>
           <div className="flex items-baseline">
-            <span className="text-3xl font-extrabold text-white tracking-tight">{max}</span>
+            <span className="text-3xl font-extrabold text-slate-900 tracking-tight">{max}</span>
             <span className="text-sm font-semibold text-slate-400 ml-1">°C</span>
           </div>
         </div>
@@ -24,7 +24,7 @@ export default function TemperatureCard({ max, min }) {
         <div>
           <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1 font-semibold text-right">Minimum</p>
           <div className="flex items-baseline justify-end">
-            <span className="text-3xl font-extrabold text-white tracking-tight">{min}</span>
+            <span className="text-3xl font-extrabold text-slate-900 tracking-tight">{min}</span>
             <span className="text-sm font-semibold text-slate-400 ml-1">°C</span>
           </div>
         </div>

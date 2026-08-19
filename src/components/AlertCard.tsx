@@ -31,7 +31,7 @@ export default function AlertCard({ alerts }) {
                 </p>
                 <span className="text-[10px] text-slate-500 font-medium">{alert.time}</span>
               </div>
-              <p className="text-sm text-slate-200 truncate group-hover:text-white transition-colors">{alert.message}</p>
+              <p className="text-sm text-slate-700 truncate group-hover:text-slate-900 transition-colors">{alert.message}</p>
             </div>
           </div>
         ))}

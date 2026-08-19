@@ -32,7 +32,7 @@ export default function GaugeCard({ title, percentage, color }) {
           />
         </svg>
         <div className="absolute flex flex-col items-center">
-          <span className="text-2xl font-extrabold text-white tracking-tighter">{percentage}<span className="text-sm font-semibold text-slate-400 ml-0.5">%</span></span>
+          <span className="text-2xl font-extrabold text-slate-900 tracking-tighter">{percentage}<span className="text-sm font-semibold text-slate-600 ml-0.5">%</span></span>
         </div>
       </div>
     </div>

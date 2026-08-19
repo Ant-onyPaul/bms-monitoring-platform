@@ -60,20 +60,20 @@ export default function DeviceDetails() {
         <div className="flex justify-between items-start pb-4">
           <div>
             <div className="flex items-center gap-3">
-              <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-white transition-colors">
+              <button onClick={() => navigate(-1)} className="text-slate-500 hover:text-slate-900 transition-colors">
                 ← Back
               </button>
-              <h2 className="text-3xl font-bold text-white tracking-tight">{device.name}</h2>
+              <h2 className="text-3xl font-bold text-slate-900 tracking-tight">{device.name}</h2>
               <StatusBadge lastSeenAt={device.last_seen_at} status={device.status} />
             </div>
-            <p className="text-slate-400 mt-1 ml-11">
+            <p className="text-slate-600 mt-1 ml-11">
               ID: {device.device_identifier} | Location: {device.location} | Type: {device.device_type}
             </p>
           </div>
         </div>
 
         {/* Local Tab Navigation */}
-        <div className="border-b border-slate-700/50 mb-6">
+        <div className="border-b border-slate-200 mb-6">
           <nav className="-mb-px flex space-x-8">
             {tabs.map((tab) => (
               <button
@@ -82,8 +82,8 @@ export default function DeviceDetails() {
                 className={`
                   whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200
                   ${activeTab === tab.id
-                    ? 'border-brand-blue text-brand-blue'
-                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-500'}
+                    ? 'border-brand-green text-brand-green'
+                    : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300'}
                 `}
               >
                 {tab.label}

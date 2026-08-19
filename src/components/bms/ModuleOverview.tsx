@@ -98,8 +98,8 @@ export function ModuleOverview({ deviceId, onModuleSelect }: ModuleOverviewProps
       {/* Page Header & Rack Selector */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
         <div className="max-w-2xl">
-          <h2 className="text-3xl font-extrabold text-white tracking-tight mb-2">Module Overview</h2>
-          <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
+          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Module Overview</h2>
+          <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
             Monitor and compare every battery module inside the selected battery rack{deviceId ? ` for device ${deviceId}` : ''}.
           </p>
         </div>

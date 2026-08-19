@@ -58,7 +58,7 @@ export default function CellCard({ cell, highlightType }: CellCardProps) {
 
       {/* Voltage display */}
       <div className="flex items-baseline mb-4 relative z-10">
-        <span className={`text-2xl font-extrabold tracking-tight ${isHighest ? 'text-brand-green' : isLowest ? 'text-orange-400' : 'text-white'}`}>
+        <span className={`text-2xl font-extrabold tracking-tight ${isHighest ? 'text-brand-green' : isLowest ? 'text-orange-400' : 'text-slate-900'}`}>
           {cell.voltage}
         </span>
         <span className="ml-1 text-xs text-slate-500 font-medium">mV</span>

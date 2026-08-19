@@ -29,7 +29,7 @@ export default function VendorManagement() {
       accessor: (row: Vendor) => (
         <button 
           onClick={(e) => { e.stopPropagation(); navigate(`/admin/vendors/${row.id}`); }}
-          className="text-brand-blue hover:text-blue-400 text-sm font-medium"
+          className="text-brand-green hover:text-green-700 text-sm font-medium"
         >
           View Customers
         </button>
@@ -40,12 +40,12 @@ export default function VendorManagement() {
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-slide-up-fade">
-        <div className="flex justify-between items-end pb-2 border-b border-slate-700/50">
+        <div className="flex justify-between items-end pb-2 border-b border-slate-200">
           <div>
-            <h2 className="text-3xl font-bold text-white tracking-tight">Vendors</h2>
-            <p className="text-slate-400 mt-1">Manage all vendors in the system.</p>
+            <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Vendors</h2>
+            <p className="text-slate-600 mt-1">Manage all vendors in the system.</p>
           </div>
-          <button className="bg-brand-blue hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+          <button className="bg-brand-green hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm">
             Add Vendor
           </button>
         </div>

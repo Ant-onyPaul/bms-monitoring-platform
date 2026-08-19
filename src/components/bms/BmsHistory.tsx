@@ -31,18 +31,18 @@ export function BmsHistory({ deviceId }: BmsHistoryProps) {
       <div className="glass-card rounded-2xl p-6">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">Change-based history</p>
-            <h2 className="text-2xl font-bold text-white">Battery trend stored as intervals</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-green">Change-based history</p>
+            <h2 className="text-2xl font-bold text-slate-900">Battery trend stored as intervals</h2>
           </div>
-          <p className="text-sm text-slate-400">Repeated values are stored once until the next meaningful change.</p>
+          <p className="text-sm text-slate-600">Repeated values are stored once until the next meaningful change.</p>
         </div>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="glass-card rounded-2xl p-6">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-white">SOC history</h3>
-            <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">
+            <h3 className="text-lg font-semibold text-slate-900">SOC history</h3>
+            <span className="rounded-full border border-brand-green/20 bg-brand-green/10 px-3 py-1 text-xs font-medium text-brand-green">
               {compressedSeries.length} stored intervals
             </span>
           </div>
@@ -93,15 +93,15 @@ export function BmsHistory({ deviceId }: BmsHistoryProps) {
         </div>
 
         <div className="glass-card rounded-2xl p-6">
-          <h3 className="text-lg font-semibold text-white">Stored segments</h3>
+          <h3 className="text-lg font-semibold text-slate-900">Stored segments</h3>
           <div className="mt-4 space-y-3">
             {compressedSeries.map((segment) => (
-              <div key={`${segment.startTime}-${segment.endTime}`} className="rounded-xl border border-slate-700/70 bg-slate-900/40 p-3">
-                <div className="flex items-center justify-between text-sm text-slate-300">
+              <div key={`${segment.startTime}-${segment.endTime}`} className="rounded-xl border border-slate-200 bg-white/50 shadow-sm p-3">
+                <div className="flex items-center justify-between text-sm text-slate-900 font-semibold">
                   <span>{segment.value}%</span>
-                  <span className="text-emerald-300">{segment.endTime ? 'active interval' : 'current value'}</span>
+                  <span className="text-brand-green">{segment.endTime ? 'active interval' : 'current value'}</span>
                 </div>
-                <p className="mt-2 text-xs text-slate-400">
+                <p className="mt-2 text-xs text-slate-600">
                   {segment.startTime} → {segment.endTime || 'now'}
                 </p>
               </div>

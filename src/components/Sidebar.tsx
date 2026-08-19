@@ -54,12 +54,11 @@ export default function Sidebar({ isOpen, toggleSidebar }: any) {
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#081B29]/80 backdrop-blur-xl border-r border-slate-800/60 shadow-[4px_0_24px_rgba(0,0,0,0.2)] transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto ${isOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white/90 backdrop-blur-xl border-r border-slate-200/60 shadow-[4px_0_24px_rgba(0,0,0,0.05)] transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto ${isOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col`}>
         
         {/* Header/Logo */}
-        <div className="h-16 flex items-center px-6 border-b border-slate-800 shrink-0">
-          <Logo className="h-8 w-auto" />
-          <span className="ml-3 text-lg font-bold text-white tracking-wide">BMS Platform</span>
+        <div className="h-16 flex items-center px-6 border-b border-slate-200 shrink-0">
+          <span className="text-xl font-bold text-brand-green tracking-wide">SHADE ENERGY</span>
         </div>
 
         {/* Navigation */}
@@ -73,17 +72,17 @@ export default function Sidebar({ isOpen, toggleSidebar }: any) {
                 className={({ isActive }) =>
                   `flex items-center px-4 py-3 rounded-r-lg mb-1 text-sm font-medium transition-all duration-300 group relative overflow-hidden ${
                     isActive
-                      ? 'bg-gradient-to-r from-brand-blue/20 to-transparent text-brand-blue shadow-[inset_4px_0_0_0_#3B82F6]'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                      ? 'bg-gradient-to-r from-brand-green/20 to-transparent text-brand-green shadow-[inset_4px_0_0_0_#10B981]'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
                     {isActive && (
-                      <div className="absolute top-0 left-0 w-1 h-full bg-brand-blue shadow-[0_0_10px_#3B82F6] animate-pulseGlow"></div>
+                      <div className="absolute top-0 left-0 w-1 h-full bg-brand-green shadow-[0_0_10px_#10B981] animate-pulseGlow"></div>
                     )}
-                    <Icon className={`w-5 h-5 mr-3 shrink-0 transition-transform duration-300 ${!isActive && 'group-hover:translate-x-1 group-hover:scale-110'} ${isActive ? 'drop-shadow-[0_0_8px_rgba(59,130,246,0.6)]' : ''}`} />
+                    <Icon className={`w-5 h-5 mr-3 shrink-0 transition-transform duration-300 ${!isActive && 'group-hover:translate-x-1 group-hover:scale-110'} ${isActive ? 'drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : ''}`} />
                     <span className={`transition-transform duration-300 ${!isActive && 'group-hover:translate-x-1'}`}>{item.name}</span>
                   </>
                 )}
@@ -93,10 +92,10 @@ export default function Sidebar({ isOpen, toggleSidebar }: any) {
         </nav>
 
         {/* Logout */}
-        <div className="p-4 border-t border-slate-800 shrink-0">
+        <div className="p-4 border-t border-slate-200 shrink-0">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/50 transition-colors"
+            className="w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-colors"
           >
             <FiLogOut className="w-5 h-5 mr-3 shrink-0" />
             Logout

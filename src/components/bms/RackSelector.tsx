@@ -21,15 +21,15 @@ export default function RackSelector({ racks, selectedRack, onSelect }: RackSele
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="inline-flex justify-between items-center w-48 rounded-xl glass-card px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm hover:bg-black/5 focus:outline-none transition-all duration-300"
+          className="inline-flex justify-between items-center w-48 rounded-md bg-card border border-border px-4 py-2.5 text-sm font-bold text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:bg-muted/50 focus:outline-none focus:border-[#10B981]/50 focus:ring-1 focus:ring-[#10B981]/50 transition-all duration-200"
         >
           {selectedRack.name}
-          <FiChevronDown className={`ml-2 -mr-1 h-5 w-5 text-slate-600 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+          <FiChevronDown className={`ml-2 -mr-1 h-4 w-4 text-muted-foreground transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
         </button>
       </div>
 
       {isOpen && (
-        <div className="absolute left-0 z-30 mt-2 w-48 origin-top-left rounded-xl glass-panel shadow-lg focus:outline-none animate-slide-up-fade">
+        <div className="absolute left-0 z-50 mt-1 w-48 origin-top-left rounded-md bg-card border border-border shadow-[0_8px_30px_rgba(0,0,0,0.12)] focus:outline-none animate-slide-up-fade overflow-hidden">
           <div className="py-1">
             {racks.map((rack) => (
               <button
@@ -38,8 +38,8 @@ export default function RackSelector({ racks, selectedRack, onSelect }: RackSele
                   onSelect(rack);
                   setIsOpen(false);
                 }}
-                className={`block w-full text-left px-4 py-2.5 text-sm transition-colors duration-200 ${
-                  selectedRack.id === rack.id ? 'bg-brand-blue/20 text-brand-blue font-medium' : 'text-slate-700 hover:bg-black/10 hover:text-slate-900'
+                className={`block w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                  selectedRack.id === rack.id ? 'bg-[#10B981]/10 text-[#10B981] font-bold' : 'text-foreground/80 hover:bg-muted hover:text-foreground font-medium'
                 }`}
               >
                 {rack.name}

@@ -14,8 +14,8 @@ export default function Logo({ className = "", showText = false }) {
         >
           <defs>
             <linearGradient id="seGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#2563EB" />
-              <stop offset="100%" stopColor="#10B981" />
+              <stop offset="0%" stopColor="#10B981" />
+              <stop offset="100%" stopColor="#047857" />
             </linearGradient>
           </defs>
 
@@ -67,8 +67,8 @@ export default function Logo({ className = "", showText = false }) {
       </div>
 
       {showText && (
-        <span className="font-sans font-bold tracking-tight text-slate-900 text-xl">
-          Shade<span className="bg-gradient-to-r from-blue-600 to-emerald-500 bg-clip-text text-transparent"> Energy</span>
+        <span className="font-sans font-bold tracking-tight text-foreground text-xl uppercase">
+          SHADE<span className="text-[#10B981]"> ENERGY</span>
         </span>
       )}
     </div>

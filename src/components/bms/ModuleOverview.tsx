@@ -93,13 +93,13 @@ export function ModuleOverview({ deviceId, onModuleSelect }: ModuleOverviewProps
   }, [modules]);
 
   return (
-    <div className="animate-fade-in pb-10">
+    <div className="pb-10">
       
       {/* Page Header & Rack Selector */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
         <div className="max-w-2xl">
-          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Module Overview</h2>
-          <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
+          <h2 className="text-2xl font-bold text-foreground tracking-tight mb-1">Module Overview</h2>
+          <p className="text-muted-foreground text-sm">
             Monitor and compare every battery module inside the selected battery rack{deviceId ? ` for device ${deviceId}` : ''}.
           </p>
         </div>
@@ -113,30 +113,30 @@ export function ModuleOverview({ deviceId, onModuleSelect }: ModuleOverviewProps
       </div>
 
       {/* Summary Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         <StatCard 
           title="Total Modules" 
           value={totalModules}
           icon={FiGrid}
-          colorClass="bg-brand-blue/20 text-brand-blue"
+          colorClass="bg-blue-500/10 text-blue-400 border border-blue-500/30"
         />
         <StatCard 
           title="Healthy Modules" 
           value={healthyModules}
           icon={FiCheckCircle}
-          colorClass="bg-brand-green/20 text-brand-green"
+          colorClass="bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/30"
         />
         <StatCard 
           title="Warning Modules" 
           value={warningModules}
           icon={FiAlertTriangle}
-          colorClass="bg-yellow-500/20 text-yellow-500"
+          colorClass="bg-yellow-500/10 text-yellow-500 border border-yellow-500/30"
         />
         <StatCard 
           title="Offline / Fault" 
           value={offlineModules}
           icon={FiWifiOff}
-          colorClass="bg-red-500/20 text-red-500"
+          colorClass="bg-destructive/10 text-destructive border border-destructive/30"
         />
       </div>
 

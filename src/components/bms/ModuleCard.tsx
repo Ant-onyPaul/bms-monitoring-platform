@@ -31,41 +31,36 @@ export default function ModuleCard({ module, isHighestImbalance, onSelect }: Mod
   return (
     <div 
       onClick={handleClick}
-      className={`glass-card rounded-2xl p-5 cursor-pointer flex flex-col justify-between h-full group relative overflow-hidden transition-all duration-300 animate-slide-up-fade
-        ${isHighestImbalance ? 'border-orange-500/50 shadow-[0_0_15px_rgba(249,115,22,0.2)]' : 'hover:border-white/10'}`}
+      className={`premium-card p-4 cursor-pointer flex flex-col justify-between h-full group relative transition-all duration-200 hover:-translate-y-0.5
+        ${isHighestImbalance ? 'border-orange-500/50 bg-orange-500/5' : 'hover:border-[#10B981]/50'}`}
     >
-      {/* Imbalance Glow Background */}
-      {isHighestImbalance && (
-        <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-orange-500/10 blur-[40px] pointer-events-none"></div>
-      )}
-
       {/* Header section */}
-      <div className="flex justify-between items-start mb-6 relative z-10">
+      <div className="flex justify-between items-start mb-4 pb-3 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className={`p-2.5 rounded-lg flex items-center justify-center ${isHighestImbalance ? 'bg-orange-500/10 text-orange-400' : 'bg-brand-blue/10 text-brand-blue'}`}>
-            <FiBattery className="w-5 h-5" />
+          <div className={`p-1.5 rounded-sm border flex items-center justify-center ${isHighestImbalance ? 'border-orange-500/30 bg-orange-500/10 text-orange-600' : 'border-border bg-muted/50 text-foreground'}`}>
+            <FiBattery className="w-4 h-4" />
           </div>
-          <h3 className="text-lg font-bold text-slate-900 tracking-tight">{module.name}</h3>
+          <h3 className="text-sm font-bold text-foreground tracking-tight uppercase">{module.name}</h3>
         </div>
         <HealthBadge status={module.health} />
       </div>
 
       {/* Alert section (if highest imbalance) */}
       {isHighestImbalance && module.deltaV && (
-        <div className="mb-6 relative z-10">
+        <div className="mb-5">
           <ImbalanceAlert deltaV={module.deltaV} />
         </div>
       )}
 
       {/* Vitals grid */}
-      <div className="grid grid-cols-2 gap-4 mb-6 relative z-10">
+      <div className="grid grid-cols-2 gap-4 mb-5">
         <VoltageDisplay voltage={module.voltage} />
         <TemperatureDisplay temperature={module.temperature} />
       </div>
 
       {/* Footer / Comm Status */}
-      <div className="pt-4 border-t border-white/5 flex justify-between items-center mt-auto relative z-10">
-        <span className="text-[10px] sm:text-xs text-slate-600 font-medium">Comm. Status</span>
+      <div className="pt-3 border-t border-border flex justify-between items-center mt-auto">
+        <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">Comm. Status</span>
         <CommunicationBadge active={module.communication === 'Active'} />
       </div>
     </div>

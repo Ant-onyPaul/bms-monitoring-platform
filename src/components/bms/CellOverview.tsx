@@ -77,13 +77,13 @@ export function CellOverview({ deviceId, moduleId }: CellOverviewProps) {
   const highestTemp = Math.max(...sensors.map(s => s.temperature));
 
   return (
-    <div className="animate-fade-in pb-10">
+    <div className="pb-10">
       
       {/* Page Header & Module Selector */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
         <div className="max-w-2xl">
-          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Cell Overview</h2>
-          <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
+          <h2 className="text-2xl font-bold text-foreground tracking-tight mb-1">Cell Overview</h2>
+          <p className="text-muted-foreground text-sm">
             Monitor every battery cell inside the selected battery module{deviceId ? ` for device ${deviceId}` : ''}.
           </p>
         </div>
@@ -97,52 +97,52 @@ export function CellOverview({ deviceId, moduleId }: CellOverviewProps) {
       </div>
 
       {/* Summary Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6 mb-10">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6 mb-8">
         <StatCard 
           title="Highest Voltage" 
           value={highestVoltage}
           unit="mV"
           icon={FiArrowUp}
-          colorClass="bg-brand-green/20 text-brand-green"
+          colorClass="bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/30"
         />
         <StatCard 
           title="Lowest Voltage" 
           value={lowestVoltage}
           unit="mV"
           icon={FiArrowDown}
-          colorClass="bg-orange-500/20 text-orange-400"
+          colorClass="bg-orange-500/10 text-orange-500 border border-orange-500/30"
         />
         <StatCard 
           title="Avg Voltage" 
           value={avgVoltage}
           unit="mV"
           icon={FiActivity}
-          colorClass="bg-brand-blue/20 text-brand-blue"
+          colorClass="bg-blue-500/10 text-blue-400 border border-blue-500/30"
         />
         <StatCard 
           title="High Temp" 
           value={highestTemp}
           unit="°C"
           icon={FiThermometer}
-          colorClass="bg-red-500/20 text-red-500"
+          colorClass="bg-destructive/10 text-destructive border border-destructive/30"
         />
         <StatCard 
           title="Total Cells" 
           value={totalCells}
           icon={FiGrid}
-          colorClass="bg-slate-700/50 text-slate-300"
+          colorClass="bg-muted/10 text-muted-foreground border border-border"
         />
         <StatCard 
           title="Healthy Cells" 
           value={healthyCells}
           icon={FiCheckCircle}
-          colorClass="bg-brand-green/20 text-brand-green"
+          colorClass="bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/30"
         />
       </div>
 
       {/* NTC Sensors Grid */}
-      <div className="mb-10">
-        <h3 className="text-lg font-bold text-slate-900 mb-4">Temperature Sensors (NTC)</h3>
+      <div className="mb-8">
+        <h3 className="label-technical mb-4">Temperature Sensors (NTC)</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {sensors.map(sensor => (
             <SensorCard key={sensor.id} sensor={sensor} />
@@ -152,8 +152,8 @@ export function CellOverview({ deviceId, moduleId }: CellOverviewProps) {
 
       {/* Cell Grid */}
       <div>
-        <h3 className="text-lg font-bold text-slate-900 mb-4">Cell Voltages</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+        <h3 className="label-technical mb-4">Cell Voltage Map (52-Cell Series)</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 xl:grid-cols-[repeat(13,minmax(0,1fr))] gap-2">
           {cells.map((cell) => {
             let highlightType: 'highest' | 'lowest' | null = null;
             if (cell.voltage === highestVoltage) highlightType = 'highest';

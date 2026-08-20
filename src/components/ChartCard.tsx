@@ -1,53 +1,42 @@
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
 export default function ChartCard({ title, type, data, color }) {
-  // A simple placeholder for charts using SVG and CSS
+  // Format data for recharts
+  const chartData = data.map((value, index) => ({
+    name: `T${index}`,
+    value: value
+  }));
+
   return (
-    <div className="glass-card rounded-2xl p-6 h-72 flex flex-col group relative overflow-hidden">
-      <div className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-[80px] opacity-5 -translate-y-1/2 translate-x-1/2 transition-opacity duration-1000 group-hover:opacity-10`} style={{ backgroundColor: color }}></div>
-      
-      <h3 className="text-xs font-semibold text-slate-600 mb-6 uppercase tracking-widest relative z-10">{title}</h3>
-      <div className="flex-1 relative w-full flex items-end justify-between px-2 pb-2 z-10">
-        {/* Placeholder Grid lines */}
-        <div className="absolute inset-0 border-b border-slate-200"></div>
-        <div className="absolute inset-y-0 left-0 right-0 flex flex-col justify-between opacity-30">
-          <div className="w-full h-px bg-slate-300"></div>
-          <div className="w-full h-px bg-slate-300"></div>
-          <div className="w-full h-px bg-slate-300"></div>
-          <div className="w-full h-px bg-slate-300"></div>
-        </div>
-
-        {/* Mock Chart Data visualization */}
-        {type === 'bar' && data.map((val, i) => (
-          <div key={i} className="relative z-10 w-full mx-1 rounded-t-sm transition-all duration-1000 ease-in-out hover:opacity-80 group/bar cursor-pointer" 
-               style={{ height: `${val}%`, backgroundColor: color, boxShadow: `0 -4px 12px ${color}33` }}>
-            <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-bold text-slate-900 bg-white border border-slate-200 px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap shadow-sm">{val}</span>
-          </div>
-        ))}
-
-        {type === 'line' && (
-          <svg className="absolute inset-0 w-full h-full z-10 overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 100">
-            <polyline 
-              fill="none" 
-              stroke={color} 
-              strokeWidth="2.5"
-              className="drop-shadow-[0_4px_6px_rgba(0,0,0,0.5)]"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              points={data.map((val, i) => `${(i / (data.length - 1)) * 100},${100 - val}`).join(' ')} 
-            />
-            {/* Area under curve gradient placeholder */}
-            <polygon 
-              fill={`url(#gradient-${title.replace(/\s+/g, '')})`} 
-              opacity="0.3"
-              points={`0,100 ${data.map((val, i) => `${(i / (data.length - 1)) * 100},${100 - val}`).join(' ')} 100,100`}
-            />
-            <defs>
-              <linearGradient id={`gradient-${title.replace(/\s+/g, '')}`} x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor={color} stopOpacity="0.8" />
-                <stop offset="100%" stopColor={color} stopOpacity="0" />
-              </linearGradient>
-            </defs>
-          </svg>
-        )}
+    <div className="premium-card p-5 h-72 flex flex-col relative overflow-hidden">
+      <h3 className="text-xs font-semibold text-muted-foreground mb-4 uppercase tracking-widest relative z-10">{title}</h3>
+      <div className="flex-1 w-full h-full relative z-10">
+        <ResponsiveContainer width="100%" height="100%">
+          {type === 'line' ? (
+            <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }} />
+              <Tooltip 
+                contentStyle={{ backgroundColor: 'var(--color-card)', borderRadius: '8px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5)' }}
+                itemStyle={{ color: 'var(--color-foreground)', fontWeight: 600 }}
+              />
+              <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: color, stroke: 'var(--color-background)', strokeWidth: 2 }} />
+            </LineChart>
+          ) : (
+            <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }} />
+              <Tooltip 
+                cursor={{ fill: 'var(--color-muted)' }}
+                contentStyle={{ backgroundColor: 'var(--color-card)', borderRadius: '8px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5)' }}
+                itemStyle={{ color: 'var(--color-foreground)', fontWeight: 600 }}
+              />
+              <Bar dataKey="value" fill={color} radius={[2, 2, 0, 0]} />
+            </BarChart>
+          )}
+        </ResponsiveContainer>
       </div>
     </div>
   );

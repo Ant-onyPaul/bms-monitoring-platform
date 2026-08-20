@@ -89,19 +89,19 @@ export default function LoginForm() {
 
       {/* Remember Me & Forgot Password Links */}
       <div className="flex items-center justify-between text-xs sm:text-sm font-medium mt-1 select-none">
-        <label className="flex items-center gap-2.5 text-slate-400 hover:text-white transition-colors duration-200 cursor-pointer group">
+        <label className="flex items-center gap-2.5 text-muted-foreground hover:text-foreground transition-colors duration-200 cursor-pointer group">
           <input
             type="checkbox"
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
-            className="w-4.5 h-4.5 rounded border border-slate-700 bg-slate-900/50 text-emerald-500 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none cursor-pointer transition-all duration-200"
+            className="w-4.5 h-4.5 rounded border border-border bg-card text-[#10B981] focus:ring-4 focus:ring-[#10B981]/20 focus:border-[#10B981] outline-none cursor-pointer transition-all duration-200"
           />
-          <span className="font-medium text-slate-400 group-hover:text-white transition-colors duration-200">Remember me</span>
+          <span className="font-medium text-muted-foreground group-hover:text-foreground transition-colors duration-200">Remember me</span>
         </label>
         <button
           type="button"
           onClick={() => alert('Password recovery flow is disabled in this mockup.')}
-          className="text-emerald-400 hover:text-emerald-300 hover:underline transition-colors focus:outline-none focus:underline font-semibold cursor-pointer select-none"
+          className="text-[#10B981] hover:text-[#10B981]/80 hover:underline transition-colors focus:outline-none focus:underline font-semibold cursor-pointer select-none"
         >
           Forgot Password?
         </button>

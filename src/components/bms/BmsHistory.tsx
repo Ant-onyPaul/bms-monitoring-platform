@@ -27,22 +27,22 @@ export function BmsHistory({ deviceId }: BmsHistoryProps) {
   const segmentWidth = usableWidth / Math.max(compressedSeries.length, 1);
 
   return (
-    <div className="space-y-6 animate-slide-up-fade">
-      <div className="glass-card rounded-2xl p-6">
+    <div className="space-y-6 pb-10">
+      <div className="premium-card p-6">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-green">Change-based history</p>
-            <h2 className="text-2xl font-bold text-slate-900">Battery trend stored as intervals</h2>
+            <p className="label-technical mb-2">History & Trends</p>
+            <h2 className="text-2xl font-bold text-foreground tracking-tight uppercase">Battery trend stored as intervals</h2>
           </div>
-          <p className="text-sm text-slate-600">Repeated values are stored once until the next meaningful change.</p>
+          <p className="text-sm text-muted-foreground font-medium">Repeated values are stored once until the next meaningful change.</p>
         </div>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="glass-card rounded-2xl p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-slate-900">SOC history</h3>
-            <span className="rounded-full border border-brand-green/20 bg-brand-green/10 px-3 py-1 text-xs font-medium text-brand-green">
+        <div className="premium-card p-6">
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="label-technical">SOC history</h3>
+            <span className="rounded-sm border border-[#10B981]/30 bg-[#10B981]/10 px-3 py-1 text-[10px] uppercase font-bold tracking-widest text-[#10B981]">
               {compressedSeries.length} stored intervals
             </span>
           </div>
@@ -55,7 +55,7 @@ export function BmsHistory({ deviceId }: BmsHistoryProps) {
                 x2={chartWidth - padding}
                 y1={padding + usableHeight * ratio}
                 y2={padding + usableHeight * ratio}
-                stroke="rgba(148, 163, 184, 0.25)"
+                stroke="var(--color-border)"
                 strokeDasharray="4 4"
               />
             ))}
@@ -73,18 +73,9 @@ export function BmsHistory({ deviceId }: BmsHistoryProps) {
                     y={y}
                     width={rectWidth}
                     height={chartHeight - padding * 2 - y + padding}
-                    rx="10"
-                    fill="rgba(16, 185, 129, 0.28)"
-                    stroke="rgba(16, 185, 129, 0.9)"
-                    strokeWidth="2"
-                  />
-                  <line
-                    x1={x + 5}
-                    x2={x + 5}
-                    y1={y}
-                    y2={chartHeight - padding}
-                    stroke="rgba(16, 185, 129, 0.8)"
-                    strokeWidth="2"
+                    rx="2"
+                    fill="#10B981"
+                    opacity="0.9"
                   />
                 </g>
               );
@@ -92,17 +83,17 @@ export function BmsHistory({ deviceId }: BmsHistoryProps) {
           </svg>
         </div>
 
-        <div className="glass-card rounded-2xl p-6">
-          <h3 className="text-lg font-semibold text-slate-900">Stored segments</h3>
-          <div className="mt-4 space-y-3">
+        <div className="premium-card p-6">
+          <h3 className="label-technical">Stored segments</h3>
+          <div className="mt-6 space-y-3">
             {compressedSeries.map((segment) => (
-              <div key={`${segment.startTime}-${segment.endTime}`} className="rounded-xl border border-slate-200 bg-white/50 shadow-sm p-3">
-                <div className="flex items-center justify-between text-sm text-slate-900 font-semibold">
-                  <span>{segment.value}%</span>
-                  <span className="text-brand-green">{segment.endTime ? 'active interval' : 'current value'}</span>
+              <div key={`${segment.startTime}-${segment.endTime}`} className="rounded-md border border-border bg-card p-4 transition-colors hover:bg-muted/50">
+                <div className="flex items-center justify-between text-sm text-foreground font-bold">
+                  <span className="text-xl data-technical tracking-tight">{segment.value}%</span>
+                  <span className="text-[#10B981] label-technical">{segment.endTime ? 'active interval' : 'current value'}</span>
                 </div>
-                <p className="mt-2 text-xs text-slate-600">
-                  {segment.startTime} → {segment.endTime || 'now'}
+                <p className="mt-2 text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
+                  {segment.startTime} &rarr; {segment.endTime || 'now'}
                 </p>
               </div>
             ))}

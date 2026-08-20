@@ -57,18 +57,33 @@ export default function DeviceDetails() {
     <DashboardLayout>
       <div className="space-y-6 animate-slide-up-fade">
         {/* Device Context Header */}
-        <div className="flex justify-between items-start pb-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <button onClick={() => navigate(-1)} className="text-slate-500 hover:text-slate-900 transition-colors">
-                ← Back
-              </button>
-              <h2 className="text-3xl font-bold text-slate-900 tracking-tight">{device.name}</h2>
-              <StatusBadge lastSeenAt={device.last_seen_at} status={device.status} />
+        <div className="flex flex-col pb-6 border-b border-border">
+          <div className="flex items-center gap-2 mb-3">
+            <button onClick={() => navigate(-1)} className="text-xs uppercase tracking-widest font-bold text-muted-foreground hover:text-foreground transition-colors">
+              ← BACK TO DEVICES
+            </button>
+          </div>
+          <div className="flex justify-between items-end">
+            <div>
+              <div className="flex items-center gap-4">
+                <h2 className="text-4xl font-bold text-foreground tracking-tight uppercase">{device.name}</h2>
+                <StatusBadge lastSeenAt={device.last_seen_at} status={device.status} />
+              </div>
+              <div className="flex gap-6 mt-4">
+                <div>
+                  <p className="label-technical mb-1">DEVICE ID</p>
+                  <p className="data-technical text-sm text-foreground font-medium">{device.device_identifier}</p>
+                </div>
+                <div>
+                  <p className="label-technical mb-1">LOCATION</p>
+                  <p className="data-technical text-sm text-foreground font-medium">{device.location}</p>
+                </div>
+                <div>
+                  <p className="label-technical mb-1">TYPE</p>
+                  <p className="data-technical text-sm text-foreground font-medium">{device.device_type}</p>
+                </div>
+              </div>
             </div>
-            <p className="text-slate-600 mt-1 ml-11">
-              ID: {device.device_identifier} | Location: {device.location} | Type: {device.device_type}
-            </p>
           </div>
         </div>
 

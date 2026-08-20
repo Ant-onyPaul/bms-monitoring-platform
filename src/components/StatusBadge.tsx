@@ -23,8 +23,8 @@ export default function StatusBadge({ lastSeenAt, status }: StatusBadgeProps) {
     : false;
 
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium ${isOnline ? 'bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/20' : 'bg-destructive/10 text-destructive border border-destructive/20'}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-[#22C55E] animate-pulse' : 'bg-destructive'}`}></span>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest ${isOnline ? 'bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20' : 'bg-destructive/10 text-destructive border border-destructive/20'}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-[#10B981] animate-pulse' : 'bg-destructive'}`}></span>
       {isOnline ? 'Online' : 'Offline'}
     </span>
   );

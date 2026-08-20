@@ -94,14 +94,14 @@ export default function LoginForm() {
             type="checkbox"
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
-            className="w-4.5 h-4.5 rounded border border-border bg-card text-[#22C55E] focus:ring-4 focus:ring-[#22C55E]/20 focus:border-[#22C55E] outline-none cursor-pointer transition-all duration-200"
+            className="w-4.5 h-4.5 rounded border border-border bg-card text-[#10B981] focus:ring-4 focus:ring-[#10B981]/20 focus:border-[#10B981] outline-none cursor-pointer transition-all duration-200"
           />
           <span className="font-medium text-muted-foreground group-hover:text-foreground transition-colors duration-200">Remember me</span>
         </label>
         <button
           type="button"
           onClick={() => alert('Password recovery flow is disabled in this mockup.')}
-          className="text-[#22C55E] hover:text-[#22C55E]/80 hover:underline transition-colors focus:outline-none focus:underline font-semibold cursor-pointer select-none"
+          className="text-[#10B981] hover:text-[#10B981]/80 hover:underline transition-colors focus:outline-none focus:underline font-semibold cursor-pointer select-none"
         >
           Forgot Password?
         </button>

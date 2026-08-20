@@ -31,16 +31,16 @@ export default function ModuleCard({ module, isHighestImbalance, onSelect }: Mod
   return (
     <div 
       onClick={handleClick}
-      className={`premium-card p-5 cursor-pointer flex flex-col justify-between h-full group relative transition-all duration-200 hover:-translate-y-0.5
-        ${isHighestImbalance ? 'border-orange-500/50 bg-orange-500/10' : 'hover:border-blue-500/50'}`}
+      className={`premium-card p-4 cursor-pointer flex flex-col justify-between h-full group relative transition-all duration-200 hover:-translate-y-0.5
+        ${isHighestImbalance ? 'border-orange-500/50 bg-orange-500/5' : 'hover:border-[#10B981]/50'}`}
     >
       {/* Header section */}
-      <div className="flex justify-between items-start mb-5">
+      <div className="flex justify-between items-start mb-4 pb-3 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg flex items-center justify-center ${isHighestImbalance ? 'bg-orange-500/20 text-orange-500' : 'bg-blue-500/10 text-blue-400'}`}>
-            <FiBattery className="w-5 h-5" />
+          <div className={`p-1.5 rounded-sm border flex items-center justify-center ${isHighestImbalance ? 'border-orange-500/30 bg-orange-500/10 text-orange-600' : 'border-border bg-muted/50 text-foreground'}`}>
+            <FiBattery className="w-4 h-4" />
           </div>
-          <h3 className="text-lg font-bold text-foreground tracking-tight">{module.name}</h3>
+          <h3 className="text-sm font-bold text-foreground tracking-tight uppercase">{module.name}</h3>
         </div>
         <HealthBadge status={module.health} />
       </div>

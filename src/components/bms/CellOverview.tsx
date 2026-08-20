@@ -142,7 +142,7 @@ export function CellOverview({ deviceId, moduleId }: CellOverviewProps) {
 
       {/* NTC Sensors Grid */}
       <div className="mb-8">
-        <h3 className="text-lg font-bold text-foreground tracking-tight mb-4">Temperature Sensors (NTC)</h3>
+        <h3 className="label-technical mb-4">Temperature Sensors (NTC)</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {sensors.map(sensor => (
             <SensorCard key={sensor.id} sensor={sensor} />
@@ -152,8 +152,8 @@ export function CellOverview({ deviceId, moduleId }: CellOverviewProps) {
 
       {/* Cell Grid */}
       <div>
-        <h3 className="text-lg font-bold text-foreground tracking-tight mb-4">Cell Voltages</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+        <h3 className="label-technical mb-4">Cell Voltage Map (52-Cell Series)</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 xl:grid-cols-[repeat(13,minmax(0,1fr))] gap-2">
           {cells.map((cell) => {
             let highlightType: 'highest' | 'lowest' | null = null;
             if (cell.voltage === highestVoltage) highlightType = 'highest';

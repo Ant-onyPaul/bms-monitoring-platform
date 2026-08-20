@@ -17,15 +17,15 @@ export default function StatusCard({ status }) {
 
   return (
     <div className="premium-card p-6 h-full flex flex-col justify-center">
-      <h3 className="text-xs font-semibold text-muted-foreground mb-4 uppercase tracking-widest">System Status</h3>
+      <h3 className="label-technical mb-4">System Status</h3>
       
-      <div className={`flex items-center p-4 rounded-lg border ${config.bg} ${config.border}`}>
+      <div className={`flex items-center p-4 rounded-md border ${config.bg} ${config.border}`}>
         <div className="relative shrink-0">
-          <Icon className={`w-10 h-10 ${config.color}`} />
+          <Icon className={`w-8 h-8 ${config.color}`} />
         </div>
         <div className="ml-4">
-          <p className="text-xl font-bold text-foreground tracking-tight">{config.text}</p>
-          <p className="text-sm text-muted-foreground mt-0.5">All modules operating within normal parameters.</p>
+          <p className="text-xl data-technical text-foreground font-medium">{config.text}</p>
+          <p className="text-xs text-muted-foreground mt-1">All modules operating within normal parameters.</p>
         </div>
       </div>
     </div>

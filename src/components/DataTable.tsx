@@ -23,13 +23,13 @@ export default function DataTable<T>({ columns, data, searchPlaceholder = 'Searc
   });
 
   return (
-    <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
+    <div className="bg-card rounded-md border border-border overflow-hidden shadow-sm">
       <div className="p-4 border-b border-border flex justify-between items-center bg-card">
         <div className="relative">
           <input
             type="text"
             placeholder={searchPlaceholder}
-            className="pl-10 pr-4 py-2 bg-card border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-[#22C55E] focus:ring-1 focus:ring-[#22C55E] w-64 placeholder-muted-foreground"
+            className="pl-10 pr-4 py-2 bg-card border border-border rounded-sm text-sm text-foreground focus:outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] w-64 placeholder-muted-foreground"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />

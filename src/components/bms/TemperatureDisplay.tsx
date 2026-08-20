@@ -5,10 +5,10 @@ interface TemperatureDisplayProps {
 export default function TemperatureDisplay({ temperature }: TemperatureDisplayProps) {
   return (
     <div>
-      <p className="text-[10px] sm:text-xs text-muted-foreground font-semibold tracking-wider uppercase mb-1">High Temp</p>
+      <p className="label-technical mb-1">High Temp</p>
       <div className="flex items-baseline">
-        <span className="text-xl font-bold text-foreground tracking-tight">{temperature.toFixed(1)}</span>
-        <span className="ml-1 text-xs text-muted-foreground font-medium">°C</span>
+        <span className="text-xl data-technical text-foreground font-medium">{temperature.toFixed(1)}</span>
+        <span className="ml-1 text-sm font-semibold text-muted-foreground">°C</span>
       </div>
     </div>
   );

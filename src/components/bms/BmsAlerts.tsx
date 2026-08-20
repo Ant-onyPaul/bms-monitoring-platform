@@ -17,8 +17,8 @@ export function BmsAlerts({ deviceId }: BmsAlertsProps) {
   return (
     <div className="pb-10 max-w-4xl mx-auto">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-900 tracking-tight mb-1">System Alerts</h2>
-        <p className="text-slate-500 text-sm">Alerts log for device <span className="font-medium text-slate-700">{deviceId || 'BMS-101'}</span></p>
+        <h2 className="text-2xl font-bold text-foreground tracking-tight mb-1 uppercase">System Alerts</h2>
+        <p className="text-muted-foreground text-sm font-medium">Alerts log for device <span className="font-bold text-foreground data-technical">{deviceId || 'BMS-101'}</span></p>
       </div>
       <div className="h-[60vh]">
         <AlertCard alerts={alertsData} />

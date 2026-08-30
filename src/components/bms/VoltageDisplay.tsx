@@ -1,15 +1,27 @@
+import { Readout } from '../ui/Metric';
+import { IconVoltage } from '../icons';
+
 interface VoltageDisplayProps {
   voltage: number;
+  label?: string;
+  tone?: 'default' | 'ok' | 'warn' | 'crit' | 'info';
+  size?: 'sm' | 'md' | 'lg';
 }
 
-export default function VoltageDisplay({ voltage }: VoltageDisplayProps) {
+export default function VoltageDisplay({
+  voltage,
+  label = 'Voltage',
+  tone = 'default',
+  size = 'sm',
+}: VoltageDisplayProps) {
   return (
-    <div>
-      <p className="label-technical mb-1">Avg Voltage</p>
-      <div className="flex items-baseline">
-        <span className="text-xl data-technical text-foreground font-medium">{voltage.toFixed(1)}</span>
-        <span className="ml-1 text-sm font-semibold text-muted-foreground">V</span>
-      </div>
-    </div>
+    <Readout
+      label={label}
+      value={voltage.toFixed(2)}
+      unit="V"
+      icon={IconVoltage}
+      tone={tone}
+      size={size}
+    />
   );
 }

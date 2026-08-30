@@ -1,41 +1,181 @@
-import { FiAlertCircle, FiInfo, FiXOctagon } from 'react-icons/fi';
+import React, { useState } from 'react';
+import { Panel, PanelHeader } from './ui/Panel';
+import { Badge, Tone } from './ui/Badge';
+import { IconWarning, IconFault, IconInfo, IconChevronDown, IconCheckCircle } from './icons';
 
-export default function AlertCard({ alerts }) {
-  const getAlertIcon = (type) => {
-    switch (type.toLowerCase()) {
-      case 'fault': return <FiXOctagon className="text-red-500 w-5 h-5" />;
-      case 'warning': return <FiAlertCircle className="text-yellow-500 w-5 h-5" />;
-      default: return <FiInfo className="text-brand-blue w-5 h-5" />;
-    }
-  };
+/* -----------------------------------------------------------------------------
+   AlertCard
+
+   An event log, not a notification feed. Rows are scannable at severity level
+   first — a coloured spine on the left edge means the eye can find the faults
+   without reading a word — and expand in place to reveal source, code and
+   recommended action.
+
+   Accepts the original `{ type, message, time }` shape; `source`, `code` and
+   `detail` are optional enrichments.
+   -------------------------------------------------------------------------- */
+
+export interface AlertItem {
+  type: string; // 'fault' | 'warning' | 'info'
+  message: string;
+  time: string;
+  /** Where the event originated, e.g. "Rack 1 · Module 03". */
+  source?: string;
+  /** Machine code, e.g. "OV-2101". */
+  code?: string;
+  /** Longer explanation revealed on expansion. */
+  detail?: string;
+}
+
+const SEVERITY: Record<
+  string,
+  { tone: Tone; icon: React.ComponentType<any>; label: string; spine: string; iconColor: string }
+> = {
+  fault: {
+    tone: 'crit',
+    icon: IconFault,
+    label: 'Fault',
+    spine: 'bg-crit',
+    iconColor: 'text-crit',
+  },
+  warning: {
+    tone: 'warn',
+    icon: IconWarning,
+    label: 'Warning',
+    spine: 'bg-warn',
+    iconColor: 'text-warn',
+  },
+  info: {
+    tone: 'info',
+    icon: IconInfo,
+    label: 'Info',
+    spine: 'bg-info',
+    iconColor: 'text-info',
+  },
+};
+
+const resolve = (type: string) => SEVERITY[type?.toLowerCase()] ?? SEVERITY.info;
+
+export interface AlertCardProps {
+  alerts: AlertItem[];
+  title?: string;
+  /** Renders each row as expandable. */
+  expandable?: boolean;
+  /** Trailing control in the header. */
+  action?: React.ReactNode;
+  className?: string;
+}
+
+export default function AlertCard({
+  alerts,
+  title = 'Recent alerts',
+  expandable = true,
+  action,
+  className = '',
+}: AlertCardProps) {
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+
+  const activeCount = alerts.filter((a) => a.type?.toLowerCase() !== 'info').length;
 
   return (
-    <div className="premium-card p-5 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
-        <h3 className="label-technical">Recent Alerts</h3>
-        <button className="label-technical !text-[10px] text-[#10B981] hover:text-[#10B981]/80 transition-colors bg-[#10B981]/10 hover:bg-[#10B981]/20 px-3 py-1.5 rounded-sm">View All</button>
+    <Panel flush className={`flex flex-col overflow-hidden ${className}`}>
+      <div className="px-5 pt-4">
+        <PanelHeader
+          title={title}
+          meta={activeCount > 0 ? `${activeCount} active` : undefined}
+          actions={action}
+          divided
+        />
       </div>
-      
-      <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
-        {alerts.map((alert, index) => (
-          <div key={index} className="flex items-start p-3 rounded-md border border-border bg-card hover:bg-muted/50 transition-all duration-200 group cursor-pointer">
-            <div className="mt-0.5 mr-3 shrink-0">
-              {getAlertIcon(alert.type)}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-1">
-                <p className="label-technical" style={{ 
-                  color: alert.type === 'fault' ? 'var(--color-destructive)' : alert.type === 'warning' ? '#F59E0B' : '#3B82F6' 
-                }}>
-                  {alert.type}
-                </p>
-                <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{alert.time}</span>
-              </div>
-              <p className="text-sm text-foreground/90 font-medium truncate group-hover:text-foreground transition-colors">{alert.message}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+
+      {alerts.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center px-5 py-12 text-center">
+          <IconCheckCircle size={22} className="text-ok mb-2.5" />
+          <p className="text-[13px] font-medium text-ink-2">No active alerts</p>
+          <p className="mt-1 text-[12px] text-ink-4">All monitored systems are within limits.</p>
+        </div>
+      ) : (
+        <ul className="flex-1 overflow-y-auto scrollbar-fine divide-y divide-line">
+          {alerts.map((alert, index) => {
+            const severity = resolve(alert.type);
+            const Icon = severity.icon;
+            const isExpanded = expandedIndex === index;
+            const canExpand = expandable && Boolean(alert.detail || alert.source || alert.code);
+
+            return (
+              <li key={`${alert.message}-${index}`} className="relative">
+                {/* Severity spine */}
+                <span
+                  aria-hidden="true"
+                  className={`absolute left-0 top-0 bottom-0 w-[3px] ${severity.spine}`}
+                />
+
+                <div
+                  role={canExpand ? 'button' : undefined}
+                  tabIndex={canExpand ? 0 : undefined}
+                  aria-expanded={canExpand ? isExpanded : undefined}
+                  onClick={() => canExpand && setExpandedIndex(isExpanded ? null : index)}
+                  onKeyDown={(e) => {
+                    if (canExpand && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      setExpandedIndex(isExpanded ? null : index);
+                    }
+                  }}
+                  className={`
+                    pl-5 pr-4 py-3.5 transition-colors duration-100
+                    ${canExpand ? 'cursor-pointer hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand' : ''}
+                  `}
+                >
+                  <div className="flex items-start gap-3">
+                    <Icon size={15} className={`${severity.iconColor} shrink-0 mt-0.5`} />
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-[13.5px] font-medium text-ink leading-snug">
+                          {alert.message}
+                        </p>
+                        <span className="data-technical text-[11px] text-ink-4 shrink-0 pt-0.5">
+                          {alert.time}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge tone={severity.tone} size="xs">
+                          {severity.label}
+                        </Badge>
+                        {alert.source && (
+                          <span className="data-technical text-[11px] text-ink-4 truncate">
+                            {alert.source}
+                          </span>
+                        )}
+                        {alert.code && (
+                          <span className="data-technical text-[11px] text-ink-4">
+                            {alert.code}
+                          </span>
+                        )}
+                        {canExpand && (
+                          <IconChevronDown
+                            size={13}
+                            className={`ml-auto shrink-0 text-ink-4 transition-transform duration-200
+                              [transition-timing-function:var(--ease-precise)]
+                              ${isExpanded ? 'rotate-180' : ''}`}
+                          />
+                        )}
+                      </div>
+
+                      {isExpanded && alert.detail && (
+                        <p className="mt-3 pt-3 border-t border-line text-[12.5px] leading-relaxed text-ink-2 animate-fade-in">
+                          {alert.detail}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Panel>
   );
 }

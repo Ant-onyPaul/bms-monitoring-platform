@@ -1,9 +1,17 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
+import PageHeader from '../../components/PageHeader';
 import DataTable from '../../components/DataTable';
 import StatusBadge from '../../components/StatusBadge';
+import MetricStrip from '../../components/MetricStrip';
+import Button from '../../components/ui/Button';
+import { NameCell, AttributeCell, MonoCell, RowAction, relativeTime } from '../../components/tableCells';
 import { Device } from '../../types/database.types';
+import { IconPlus, IconRack, IconLocation } from '../../components/icons';
+
+const isOnline = (lastSeenAt: string | null) =>
+  lastSeenAt ? Date.now() - new Date(lastSeenAt).getTime() < 5 * 60 * 1000 : false;
 
 export default function DeviceManagement() {
   const navigate = useNavigate();
@@ -13,41 +21,76 @@ export default function DeviceManagement() {
   ]);
 
   const columns = [
-    { header: 'Device Name', accessor: 'name' as keyof Device },
-    { header: 'Identifier', accessor: 'device_identifier' as keyof Device },
-    { header: 'Location', accessor: 'location' as keyof Device },
-    { 
-      header: 'Status', 
-      accessor: (row: Device) => <StatusBadge lastSeenAt={row.last_seen_at} status={row.status} /> 
+    {
+      header: 'Device',
+      accessor: (row: Device) => <NameCell name={row.name} code={row.device_identifier} />,
     },
     {
-      header: 'Actions',
+      header: 'Location',
       accessor: (row: Device) => (
-        <button 
-          onClick={(e) => { e.stopPropagation(); navigate(`/admin/devices/${row.id}`); }}
-          className="text-brand-green hover:text-green-700 text-sm font-medium"
-        >
-          View Details
-        </button>
-      )
-    }
+        <AttributeCell icon={IconLocation}>{row.location ?? '—'}</AttributeCell>
+      ),
+    },
+    {
+      header: 'Type',
+      accessor: (row: Device) => <MonoCell>{row.device_type ?? '—'}</MonoCell>,
+      compact: true as const,
+    },
+    {
+      header: 'Last seen',
+      accessor: (row: Device) => <MonoCell>{relativeTime(row.last_seen_at)}</MonoCell>,
+      compact: true as const,
+    },
+    {
+      header: 'Status',
+      accessor: (row: Device) => (
+        <StatusBadge lastSeenAt={row.last_seen_at} status={row.status} />
+      ),
+      compact: true as const,
+    },
+    {
+      header: '',
+      accessor: (row: Device) => (
+        <RowAction label="Open" onClick={() => navigate(`/admin/devices/${row.id}`)} />
+      ),
+      align: 'right' as const,
+      compact: true as const,
+    },
   ];
+
+  const online = devices.filter((d) => isOnline(d.last_seen_at)).length;
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 animate-slide-up-fade">
-        <div className="flex justify-between items-end pb-2 border-b border-slate-200">
-          <div>
-            <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Devices</h2>
-            <p className="text-slate-600 mt-1">Manage and monitor all devices.</p>
-          </div>
-          <button className="bg-brand-green hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm">
-            Register Device
-          </button>
-        </div>
+      <PageHeader
+        eyebrow="Fleet"
+        title="Devices"
+        description="Every battery management unit registered on the platform. Select a device to open its monitoring workspace."
+        actions={
+          <Button variant="primary" icon={IconPlus}>
+            Register device
+          </Button>
+        }
+      />
 
-        <DataTable columns={columns} data={devices} searchPlaceholder="Search devices..." onRowClick={(row) => navigate(`/admin/devices/${row.id}`)} />
-      </div>
+      <MetricStrip
+        className="mb-5"
+        items={[
+          { label: 'Registered', value: devices.length, icon: IconRack },
+          { label: 'Reporting', value: online, tone: 'ok' },
+          { label: 'Not reporting', value: devices.length - online, tone: online === devices.length ? 'default' : 'crit' },
+          { label: 'Sites', value: new Set(devices.map((d) => d.location)).size, icon: IconLocation },
+        ]}
+      />
+
+      <DataTable
+        columns={columns}
+        data={devices}
+        searchPlaceholder="Search devices, identifiers, sites…"
+        onRowClick={(row) => navigate(`/admin/devices/${row.id}`)}
+        emptyTitle="No devices registered"
+        emptyHint="Register a device to begin collecting telemetry."
+      />
     </DashboardLayout>
   );
 }

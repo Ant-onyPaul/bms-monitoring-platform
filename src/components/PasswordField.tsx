@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
+import { IconLock, IconEye, IconEyeOff } from './icons';
 
 /**
- * Reusable PasswordField component with custom floating label behavior,
- * input visibility toggle (eye icon), autocomplete attributes, and error validations.
+ * PasswordField
+ *
+ * Same field mechanics as InputField, plus a visibility toggle. The two eye
+ * glyphs cross-fade in place instead of swapping instantly, which keeps the
+ * control from flickering when someone toggles it repeatedly to check a typo.
  */
 export default function PasswordField({
   id = 'current-password',
@@ -14,33 +17,37 @@ export default function PasswordField({
   required = false,
   autocomplete = 'current-password',
   ...props
-}) {
+}: any) {
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const hasValue = value !== undefined && value !== null && value.toString().length > 0;
   const isFloating = isFocused || hasValue;
 
-  const toggleVisibility = () => {
-    setShowPassword((prev) => !prev);
-  };
-
   return (
-    <div className="relative w-full mb-5 text-left group">
+    <div className="w-full text-left">
       <div
-        className={`relative flex items-center border rounded-md transition-all duration-300 ease-out bg-card/50 backdrop-blur-sm
-          ${error 
-            ? 'border-destructive/80 shadow-[0_0_12px_rgba(239,68,68,0.15)] focus-within:border-destructive focus-within:shadow-[0_0_0_3px_rgba(239,68,68,0.2)]' 
-            : 'border-border hover:border-muted-foreground/30 focus-within:border-[#10B981]/50 focus-within:shadow-[0_0_0_3px_rgba(16,185,129,0.15)]'
+        className={`
+          relative flex items-center h-14 rounded-md bg-surface border
+          transition-[border-color,box-shadow] duration-200
+          [transition-timing-function:var(--ease-precise)]
+          ${
+            error
+              ? 'border-crit shadow-[0_0_0_3px_var(--color-crit-surface)]'
+              : isFocused
+                ? 'border-brand shadow-[0_0_0_3px_var(--color-brand-surface)]'
+                : 'border-line-2 hover:border-line-3'
           }
         `}
       >
-        {/* Left Icon (Lock) */}
-        <div className={`pl-4 transition-colors duration-300 ${isFocused ? 'text-[#10B981]' : 'text-muted-foreground'} pointer-events-none`}>
-          <FiLock className="w-5 h-5" />
-        </div>
+        <span
+          className={`pl-3.5 shrink-0 pointer-events-none transition-colors duration-200 ${
+            error ? 'text-crit' : isFocused ? 'text-brand-ink' : 'text-ink-4'
+          }`}
+        >
+          <IconLock size={16} />
+        </span>
 
-        {/* Input */}
         <input
           id={id}
           type={showPassword ? 'text' : 'password'}
@@ -50,57 +57,64 @@ export default function PasswordField({
           autoComplete={autocomplete}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          className="w-full pl-2.5 pr-12 pt-6 pb-2.5 text-sm text-foreground bg-transparent border-0 outline-none transition-all placeholder-transparent focus:placeholder-muted-foreground"
           placeholder={label}
           aria-invalid={error ? 'true' : 'false'}
           aria-describedby={error ? `${id}-error` : undefined}
+          className="w-full h-full bg-transparent border-0 outline-none pt-5 pb-1.5 pl-2.5 pr-12
+            text-[14px] text-ink placeholder:text-transparent"
           {...props}
         />
 
-        {/* Show/Hide Toggle Button */}
         <button
           type="button"
-          onClick={toggleVisibility}
-          className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground focus:text-[#10B981] outline-none rounded-md transition-colors cursor-pointer select-none"
+          onClick={() => setShowPassword((s) => !s)}
           aria-label={showPassword ? 'Hide password' : 'Show password'}
+          aria-pressed={showPassword}
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 inline-flex items-center
+            justify-center rounded-md text-ink-4 hover:text-ink-2 hover:bg-surface-3
+            cursor-pointer transition-colors duration-150"
         >
-          {/* Animated eye icon container */}
-          <div className="relative w-5 h-5 flex items-center justify-center">
-            <FiEye 
-              className={`absolute inset-0 w-full h-full eye-icon-transition
-                ${showPassword ? 'scale-75 opacity-0 rotate-45' : 'scale-100 opacity-100 rotate-0'}
-              `}
+          <span className="relative block w-4 h-4">
+            <IconEye
+              size={16}
+              className={`absolute inset-0 eye-icon-transition ${
+                showPassword ? 'opacity-0 scale-75' : 'opacity-100 scale-100'
+              }`}
             />
-            <FiEyeOff 
-              className={`absolute inset-0 w-full h-full eye-icon-transition
-                ${showPassword ? 'scale-100 opacity-100 rotate-0' : 'scale-75 opacity-0 -rotate-45'}
-              `}
+            <IconEyeOff
+              size={16}
+              className={`absolute inset-0 eye-icon-transition ${
+                showPassword ? 'opacity-100 scale-100' : 'opacity-0 scale-75'
+              }`}
             />
-          </div>
+          </span>
         </button>
 
-        {/* Floating Label */}
         <label
           htmlFor={id}
-          className={`absolute left-0 top-0 pointer-events-none transition-all duration-200 ease-out origin-left text-muted-foreground text-sm ml-10
-            ${isFloating 
-              ? 'translate-y-1.5 scale-[0.78] text-[#10B981] font-bold' 
-              : 'translate-y-[15px] scale-100'
+          className={`
+            absolute left-[38px] top-0 pointer-events-none origin-left
+            transition-[transform,font-size,color] duration-200
+            [transition-timing-function:var(--ease-precise)]
+            ${
+              isFloating
+                ? `translate-y-[9px] text-[10px] uppercase tracking-[0.09em] font-semibold ${
+                    error ? 'text-crit-ink' : isFocused ? 'text-brand-ink' : 'text-ink-3'
+                  }`
+                : 'translate-y-[18px] text-[14px] text-ink-4'
             }
-            ${error && isFloating ? '!text-destructive' : ''}
           `}
         >
           {label}
-          {required && <span className="text-destructive/80 ml-0.5">*</span>}
+          {required && <span className="text-crit ml-0.5">*</span>}
         </label>
       </div>
 
-      {/* Error Message */}
       {error && (
         <p
           id={`${id}-error`}
-          className="mt-1.5 text-xs text-red-400 font-semibold flex items-center gap-1 pl-1.5 animate-fade-in"
           role="alert"
+          className="mt-1.5 text-[12px] font-medium text-crit-ink animate-fade-in"
         >
           {error}
         </p>

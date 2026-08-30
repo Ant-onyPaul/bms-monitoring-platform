@@ -1,9 +1,14 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
+import PageHeader from '../../components/PageHeader';
 import DataTable from '../../components/DataTable';
 import StatusBadge from '../../components/StatusBadge';
+import MetricStrip from '../../components/MetricStrip';
+import Button from '../../components/ui/Button';
+import { NameCell, MonoCell, RowAction } from '../../components/tableCells';
 import { Customer } from '../../types/database.types';
+import { IconPlus, IconCustomers, IconVendors } from '../../components/icons';
 
 export default function AdminVendorDetails() {
   const { id } = useParams();
@@ -16,48 +21,74 @@ export default function AdminVendorDetails() {
   ]);
 
   const columns = [
-    { header: 'Customer Name', accessor: 'name' as keyof Customer },
-    { header: 'Code', accessor: 'code' as keyof Customer },
-    { 
-      header: 'Status', 
-      accessor: (row: Customer) => <StatusBadge lastSeenAt={null} status={row.status} /> 
+    {
+      header: 'Customer',
+      accessor: (row: Customer) => <NameCell name={row.name} code={row.code} />,
     },
     {
-      header: 'Actions',
+      header: 'Status',
+      accessor: (row: Customer) => <StatusBadge lastSeenAt={null} status={row.status} />,
+      compact: true as const,
+    },
+    {
+      header: 'Created',
       accessor: (row: Customer) => (
-        <button 
-          onClick={(e) => { e.stopPropagation(); navigate(`/admin/customers/${row.id}`); }}
-          className="text-brand-green hover:text-green-700 text-sm font-medium"
-        >
-          View Devices
-        </button>
-      )
-    }
+        <MonoCell>
+          {new Date(row.created_at).toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          })}
+        </MonoCell>
+      ),
+      compact: true as const,
+    },
+    {
+      header: '',
+      accessor: (row: Customer) => (
+        <RowAction label="Devices" onClick={() => navigate(`/admin/customers/${row.id}`)} />
+      ),
+      align: 'right' as const,
+      compact: true as const,
+    },
   ];
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 animate-slide-up-fade">
-        <div className="flex justify-between items-start pb-2 border-b border-slate-200">
-          <div>
-            <div className="flex items-center gap-3">
-              <button onClick={() => navigate(-1)} className="text-slate-500 hover:text-slate-900 transition-colors">
-                ← Back
-              </button>
-              <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Vendor Overview</h2>
-            </div>
-            <p className="text-slate-600 mt-1 ml-11">Manage customers belonging to Vendor ID: {id}</p>
-          </div>
-          <button className="bg-brand-green hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm">
-            Add Customer
-          </button>
-        </div>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        backLabel="Back to vendors"
+        eyebrow={`Vendor ${id}`}
+        title="Vendor overview"
+        description="Customers onboarded by this vendor. Select a customer to see their installed devices."
+        actions={
+          <Button variant="primary" icon={IconPlus}>
+            Add customer
+          </Button>
+        }
+      />
 
-        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-          <h3 className="text-lg font-medium text-slate-900 mb-4">Customers</h3>
-          <DataTable columns={columns} data={customers} searchPlaceholder="Search customers..." onRowClick={(row) => navigate(`/admin/customers/${row.id}`)} />
-        </div>
-      </div>
+      <MetricStrip
+        className="mb-5"
+        items={[
+          { label: 'Customers', value: customers.length, icon: IconCustomers },
+          {
+            label: 'Active',
+            value: customers.filter((c) => c.status === 'active').length,
+            tone: 'ok',
+          },
+          { label: 'Vendor code', value: `VEN-${id}`, icon: IconVendors },
+        ]}
+      />
+
+      <DataTable
+        columns={columns}
+        data={customers}
+        searchPlaceholder="Search customers…"
+        onRowClick={(row) => navigate(`/admin/customers/${row.id}`)}
+        emptyTitle="No customers under this vendor"
+        emptyHint="Add a customer to begin registering devices."
+      />
     </DashboardLayout>
   );
 }

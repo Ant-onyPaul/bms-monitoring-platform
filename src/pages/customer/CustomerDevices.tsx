@@ -1,9 +1,15 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
+import PageHeader from '../../components/PageHeader';
 import DataTable from '../../components/DataTable';
 import StatusBadge from '../../components/StatusBadge';
+import MetricStrip from '../../components/MetricStrip';
+import { NameCell, AttributeCell, MonoCell, RowAction, relativeTime } from '../../components/tableCells';
 import { Device } from '../../types/database.types';
+import { IconRack, IconLocation } from '../../components/icons';
+
+const isOnline = (lastSeenAt: string | null) =>
+  lastSeenAt ? Date.now() - new Date(lastSeenAt).getTime() < 5 * 60 * 1000 : false;
 
 export default function CustomerDevices() {
   const navigate = useNavigate();
@@ -12,37 +18,65 @@ export default function CustomerDevices() {
   ];
 
   const columns = [
-    { header: 'Device Name', accessor: 'name' as keyof Device },
-    { header: 'Identifier', accessor: 'device_identifier' as keyof Device },
-    { header: 'Location', accessor: 'location' as keyof Device },
-    { 
-      header: 'Status', 
-      accessor: (row: Device) => <StatusBadge lastSeenAt={row.last_seen_at} status={row.status} /> 
+    {
+      header: 'System',
+      accessor: (row: Device) => <NameCell name={row.name} code={row.device_identifier} />,
     },
     {
-      header: 'Actions',
+      header: 'Location',
+      accessor: (row: Device) => <AttributeCell icon={IconLocation}>{row.location ?? '—'}</AttributeCell>,
+    },
+    {
+      header: 'Last seen',
+      accessor: (row: Device) => <MonoCell>{relativeTime(row.last_seen_at)}</MonoCell>,
+      compact: true as const,
+    },
+    {
+      header: 'Status',
+      accessor: (row: Device) => <StatusBadge lastSeenAt={row.last_seen_at} status={row.status} />,
+      compact: true as const,
+    },
+    {
+      header: '',
       accessor: (row: Device) => (
-        <button 
-          onClick={(e) => { e.stopPropagation(); navigate(`/customer/devices/${row.id}`); }}
-          className="text-brand-blue hover:text-blue-400 text-sm font-medium"
-        >
-          View Details
-        </button>
-      )
-    }
+        <RowAction label="Open" onClick={() => navigate(`/customer/devices/${row.id}`)} />
+      ),
+      align: 'right' as const,
+      compact: true as const,
+    },
   ];
+
+  const online = devices.filter((d) => isOnline(d.last_seen_at)).length;
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 animate-slide-up-fade">
-        <div className="flex justify-between items-end pb-2 border-b border-slate-700/50">
-          <div>
-            <h2 className="text-3xl font-bold text-white tracking-tight">My Devices</h2>
-            <p className="text-slate-400 mt-1">Monitor your BMS devices.</p>
-          </div>
-        </div>
-        <DataTable columns={columns} data={devices} onRowClick={(row) => navigate(`/customer/devices/${row.id}`)} />
-      </div>
+      <PageHeader
+        eyebrow="Your storage"
+        title="My devices"
+        description="Battery systems installed at your sites. Select a system to see its live condition and history."
+      />
+
+      <MetricStrip
+        className="mb-5"
+        items={[
+          { label: 'Systems', value: devices.length, icon: IconRack },
+          { label: 'Online', value: online, tone: 'ok' },
+          {
+            label: 'Offline',
+            value: devices.length - online,
+            tone: online === devices.length ? 'default' : 'crit',
+          },
+        ]}
+      />
+
+      <DataTable
+        columns={columns}
+        data={devices}
+        searchPlaceholder="Search systems…"
+        onRowClick={(row) => navigate(`/customer/devices/${row.id}`)}
+        emptyTitle="No systems yet"
+        emptyHint="Your installed battery systems will appear here."
+      />
     </DashboardLayout>
   );
 }

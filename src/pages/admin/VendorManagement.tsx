@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiCheckCircle } from 'react-icons/fi';
 import DashboardLayout from '../../components/DashboardLayout';
+import PageHeader from '../../components/PageHeader';
 import DataTable from '../../components/DataTable';
 import StatusBadge from '../../components/StatusBadge';
+import MetricStrip from '../../components/MetricStrip';
+import Button from '../../components/ui/Button';
+import { NameCell, MonoCell, RowAction } from '../../components/tableCells';
 import { Vendor } from '../../types/database.types';
 import AddVendorModal from '../../components/admin/AddVendorModal';
+import { IconPlus, IconCheckCircle, IconVendors, IconClose } from '../../components/icons';
 
 export default function VendorManagement() {
   const navigate = useNavigate();
@@ -19,27 +23,36 @@ export default function VendorManagement() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const columns = [
-    { header: 'Vendor Name', accessor: 'name' as keyof Vendor },
-    { header: 'Code', accessor: 'code' as keyof Vendor },
-    { 
-      header: 'Status', 
-      accessor: (row: Vendor) => <StatusBadge lastSeenAt={null} status={row.status} /> 
-    },
-    { 
-      header: 'Created', 
-      accessor: (row: Vendor) => new Date(row.created_at).toLocaleDateString() 
+    {
+      header: 'Vendor',
+      accessor: (row: Vendor) => <NameCell name={row.name} code={row.code} />,
     },
     {
-      header: 'Actions',
+      header: 'Status',
+      accessor: (row: Vendor) => <StatusBadge lastSeenAt={null} status={row.status} />,
+      compact: true as const,
+    },
+    {
+      header: 'Created',
       accessor: (row: Vendor) => (
-        <button 
-          onClick={(e) => { e.stopPropagation(); navigate(`/admin/vendors/${row.id}`); }}
-          className="text-[#10B981] hover:text-[#047857] text-sm font-bold uppercase tracking-wider"
-        >
-          View Customers
-        </button>
-      )
-    }
+        <MonoCell>
+          {new Date(row.created_at).toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          })}
+        </MonoCell>
+      ),
+      compact: true as const,
+    },
+    {
+      header: '',
+      accessor: (row: Vendor) => (
+        <RowAction label="Customers" onClick={() => navigate(`/admin/vendors/${row.id}`)} />
+      ),
+      align: 'right' as const,
+      compact: true as const,
+    },
   ];
 
   const handleAddVendor = (vendorData: any) => {
@@ -49,14 +62,14 @@ export default function VendorManagement() {
       id: Math.random().toString(36).substring(2, 9),
       name: vendorData.name,
       code: code,
-      status: 'offline', // Default status for a newly created vendor
+      status: 'offline' as any, // Default status for a newly created vendor
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
-    
+
     // Add to existing vendors list
     setVendors((prev) => [...prev, newVendor]);
-    
+
     // Show success notification
     setSuccessMessage('Vendor created successfully.');
     setTimeout(() => {
@@ -64,33 +77,66 @@ export default function VendorManagement() {
     }, 4000);
   };
 
+  const activeVendors = vendors.filter((v) => v.status === 'active').length;
+
   return (
     <DashboardLayout>
-      <div className="space-y-6 animate-slide-up-fade">
-        <div className="flex justify-between items-end pb-2 border-b border-border">
-          <div>
-            <h2 className="text-3xl font-bold text-foreground tracking-tight">Vendors</h2>
-            <p className="text-muted-foreground font-medium mt-1">Manage all vendors in the system.</p>
-          </div>
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="bg-[#10B981] hover:bg-[#047857] text-primary-foreground px-4 py-2 rounded-md font-bold transition-colors shadow-sm cursor-pointer"
+      <PageHeader
+        eyebrow="Organisation"
+        title="Vendors"
+        description="Partners authorised to manage customers and devices on the platform."
+        actions={
+          <Button variant="primary" icon={IconPlus} onClick={() => setIsModalOpen(true)}>
+            Add vendor
+          </Button>
+        }
+      />
+
+      <MetricStrip
+        className="mb-5"
+        items={[
+          { label: 'Total vendors', value: vendors.length, icon: IconVendors },
+          { label: 'Active', value: activeVendors, tone: 'ok' },
+          {
+            label: 'Pending activation',
+            value: vendors.length - activeVendors,
+            // A zero is not a warning; only colour the count when there is one.
+            tone: vendors.length - activeVendors > 0 ? 'warn' : 'default',
+          },
+        ]}
+      />
+
+      {/* Creation confirmation — dismissible, and self-clearing after 4s */}
+      {successMessage && (
+        <div
+          role="status"
+          className="flex items-center gap-3 px-4 py-3 mb-5 rounded-[10px]
+            bg-ok-surface border border-ok-line animate-slide-up-fade"
+        >
+          <IconCheckCircle size={16} className="text-ok-ink shrink-0" />
+          <span className="text-[13px] font-medium text-ok-ink flex-1">{successMessage}</span>
+          <button
+            type="button"
+            onClick={() => setSuccessMessage(null)}
+            aria-label="Dismiss"
+            className="w-6 h-6 inline-flex items-center justify-center rounded text-ok-ink/70
+              hover:text-ok-ink hover:bg-ok-line/50 cursor-pointer transition-colors"
           >
-            Add Vendor
+            <IconClose size={13} />
           </button>
         </div>
-        
-        {successMessage && (
-          <div className="flex items-center gap-3 p-4 bg-[#10B981]/10 border border-[#10B981]/30 text-[#10B981] rounded-md animate-slide-up-fade">
-            <FiCheckCircle className="w-5 h-5 shrink-0" />
-            <span className="font-semibold text-sm">{successMessage}</span>
-          </div>
-        )}
+      )}
 
-        <DataTable columns={columns} data={vendors} searchPlaceholder="Search vendors..." onRowClick={(row) => navigate(`/admin/vendors/${row.id}`)} />
-      </div>
+      <DataTable
+        columns={columns}
+        data={vendors}
+        searchPlaceholder="Search vendors…"
+        onRowClick={(row) => navigate(`/admin/vendors/${row.id}`)}
+        emptyTitle="No vendors yet"
+        emptyHint="Add a vendor to start onboarding customers."
+      />
 
-      <AddVendorModal 
+      <AddVendorModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleAddVendor}

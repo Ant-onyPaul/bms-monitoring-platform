@@ -1,8 +1,25 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { IconSearch, IconChevronUp, IconChevronDown, IconSort, IconClose } from './icons';
+
+/* -----------------------------------------------------------------------------
+   DataTable
+
+   A records surface, not a grid of cards. Rows are 52px with generous column
+   padding so a scan down the status column stays effortless, and the header is
+   sticky because device lists grow past a screen quickly.
+
+   Columns keep the original `accessor` contract — a key or a render function.
+   Sorting is offered only for key-based columns, since a render function has no
+   comparable underlying value.
+   -------------------------------------------------------------------------- */
 
 interface Column<T> {
   header: string;
   accessor: keyof T | ((row: T) => React.ReactNode);
+  /** Aligns the cell and its header; use for numeric columns. */
+  align?: 'left' | 'right';
+  /** Narrows the column to its content. */
+  compact?: boolean;
 }
 
 interface DataTableProps<T> {
@@ -10,64 +27,196 @@ interface DataTableProps<T> {
   data: T[];
   searchPlaceholder?: string;
   onRowClick?: (row: T) => void;
+  /** Extra controls rendered in the toolbar, left of the record count. */
+  toolbar?: React.ReactNode;
+  emptyTitle?: string;
+  emptyHint?: string;
 }
 
-export default function DataTable<T>({ columns, data, searchPlaceholder = 'Search...', onRowClick }: DataTableProps<T>) {
-  const [searchTerm, setSearchTerm] = useState('');
+type SortState = { key: string; direction: 'asc' | 'desc' } | null;
 
-  // Very basic search across all string/number fields in a row
-  const filteredData = data.filter((row: any) => {
-    return Object.values(row).some(value => 
-      String(value).toLowerCase().includes(searchTerm.toLowerCase())
+export default function DataTable<T>({
+  columns,
+  data,
+  searchPlaceholder = 'Search…',
+  onRowClick,
+  toolbar,
+  emptyTitle = 'No records found',
+  emptyHint = 'Try a different search term.',
+}: DataTableProps<T>) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sort, setSort] = useState<SortState>(null);
+
+  const filteredData = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return data;
+    return data.filter((row: any) =>
+      Object.values(row).some((value) => String(value).toLowerCase().includes(query)),
     );
-  });
+  }, [data, searchTerm]);
+
+  const sortedData = useMemo(() => {
+    if (!sort) return filteredData;
+    const { key, direction } = sort;
+    return [...filteredData].sort((a: any, b: any) => {
+      const left = a[key];
+      const right = b[key];
+      if (left == null) return 1;
+      if (right == null) return -1;
+      const result =
+        typeof left === 'number' && typeof right === 'number'
+          ? left - right
+          : String(left).localeCompare(String(right), undefined, { numeric: true });
+      return direction === 'asc' ? result : -result;
+    });
+  }, [filteredData, sort]);
+
+  const toggleSort = (key: string) => {
+    setSort((current) => {
+      if (current?.key !== key) return { key, direction: 'asc' };
+      if (current.direction === 'asc') return { key, direction: 'desc' };
+      return null;
+    });
+  };
 
   return (
-    <div className="bg-card rounded-md border border-border overflow-hidden shadow-sm">
-      <div className="p-4 border-b border-border flex justify-between items-center bg-card">
-        <div className="relative">
+    <div className="bg-surface border border-line rounded-[10px] shadow-[var(--shadow-e1)] overflow-hidden">
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 border-b border-line">
+        <div className="relative flex-1 min-w-0 max-w-sm">
+          <IconSearch
+            size={14}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-4 pointer-events-none"
+          />
           <input
             type="text"
-            placeholder={searchPlaceholder}
-            className="pl-10 pr-4 py-2 bg-card border border-border rounded-sm text-sm text-foreground focus:outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] w-64 placeholder-muted-foreground"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={searchPlaceholder}
+            aria-label={searchPlaceholder}
+            className="w-full h-9 pl-9 pr-9 rounded-md bg-surface-2 border border-line
+              text-[13px] text-ink placeholder:text-ink-4
+              transition-[border-color,box-shadow,background-color] duration-150
+              hover:border-line-2
+              focus:outline-none focus:bg-surface focus:border-brand
+              focus:shadow-[0_0_0_3px_var(--color-brand-surface)]"
           />
-          <svg className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              aria-label="Clear search"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 inline-flex items-center
+                justify-center rounded text-ink-4 hover:text-ink hover:bg-surface-3
+                cursor-pointer transition-colors"
+            >
+              <IconClose size={13} />
+            </button>
+          )}
         </div>
-        <div className="text-sm text-muted-foreground">
-          Showing {filteredData.length} records
+
+        <div className="flex items-center gap-3 sm:ml-auto shrink-0">
+          {toolbar}
+          <span className="data-technical text-[11px] text-ink-4 whitespace-nowrap">
+            {sortedData.length}
+            <span className="text-ink-4">
+              {sortedData.length !== data.length ? ` / ${data.length}` : ''}
+            </span>
+            <span className="ml-1 uppercase tracking-[0.08em]">records</span>
+          </span>
         </div>
       </div>
-      
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm text-foreground/90">
-          <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border">
-            <tr>
-              {columns.map((col, idx) => (
-                <th key={idx} className="px-6 py-4 font-medium">{col.header}</th>
-              ))}
+
+      {/* Records */}
+      <div className="overflow-x-auto scrollbar-fine">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-surface-2 border-b border-line">
+              {columns.map((column, index) => {
+                const sortable = typeof column.accessor !== 'function';
+                const key = String(column.accessor);
+                const isSorted = sort?.key === key;
+
+                return (
+                  <th
+                    key={index}
+                    scope="col"
+                    className={`px-5 py-2.5 ${column.align === 'right' ? 'text-right' : ''} ${
+                      column.compact ? 'w-px whitespace-nowrap' : ''
+                    }`}
+                  >
+                    {sortable ? (
+                      <button
+                        type="button"
+                        onClick={() => toggleSort(key)}
+                        className={`inline-flex items-center gap-1.5 label-technical cursor-pointer
+                          transition-colors hover:text-ink-2 group
+                          ${isSorted ? '!text-ink-2' : ''}`}
+                      >
+                        {column.header}
+                        {isSorted ? (
+                          sort!.direction === 'asc' ? (
+                            <IconChevronUp size={11} />
+                          ) : (
+                            <IconChevronDown size={11} />
+                          )
+                        ) : (
+                          <IconSort
+                            size={11}
+                            className="opacity-0 group-hover:opacity-50 transition-opacity"
+                          />
+                        )}
+                      </button>
+                    ) : (
+                      <span className="label-technical">{column.header}</span>
+                    )}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
+
           <tbody>
-            {filteredData.length === 0 ? (
+            {sortedData.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="px-6 py-8 text-center text-muted-foreground">
-                  No records found.
+                <td colSpan={columns.length} className="px-5 py-16 text-center">
+                  <p className="text-[13.5px] font-medium text-ink-2">{emptyTitle}</p>
+                  <p className="mt-1 text-[12.5px] text-ink-4">{emptyHint}</p>
                 </td>
               </tr>
             ) : (
-              filteredData.map((row, rowIdx) => (
-                <tr 
-                  key={rowIdx} 
-                  onClick={() => onRowClick && onRowClick(row)}
-                  className={`border-b border-border hover:bg-muted/50 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
+              sortedData.map((row, rowIndex) => (
+                <tr
+                  key={rowIndex}
+                  onClick={() => onRowClick?.(row)}
+                  onKeyDown={(e) => {
+                    if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      onRowClick(row);
+                    }
+                  }}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  role={onRowClick ? 'button' : undefined}
+                  className={`
+                    border-b border-line last:border-b-0
+                    transition-colors duration-100
+                    ${
+                      onRowClick
+                        ? 'cursor-pointer hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand'
+                        : ''
+                    }
+                  `}
                 >
-                  {columns.map((col, colIdx) => (
-                    <td key={colIdx} className="px-6 py-4">
-                      {typeof col.accessor === 'function' ? col.accessor(row) : (row as any)[col.accessor]}
+                  {columns.map((column, columnIndex) => (
+                    <td
+                      key={columnIndex}
+                      className={`px-5 py-3.5 text-[13px] text-ink-2 align-middle ${
+                        column.align === 'right' ? 'text-right' : ''
+                      } ${column.compact ? 'whitespace-nowrap' : ''}`}
+                    >
+                      {typeof column.accessor === 'function'
+                        ? column.accessor(row)
+                        : ((row as any)[column.accessor] as React.ReactNode)}
                     </td>
                   ))}
                 </tr>

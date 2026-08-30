@@ -1,9 +1,14 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
+import PageHeader from '../../components/PageHeader';
 import DataTable from '../../components/DataTable';
 import StatusBadge from '../../components/StatusBadge';
+import MetricStrip from '../../components/MetricStrip';
+import Button from '../../components/ui/Button';
+import { NameCell, MonoCell, RowAction } from '../../components/tableCells';
 import { Customer } from '../../types/database.types';
+import { IconPlus, IconCustomers, IconVendors } from '../../components/icons';
 
 export default function CustomerManagement() {
   const navigate = useNavigate();
@@ -14,40 +19,66 @@ export default function CustomerManagement() {
   ]);
 
   const columns = [
-    { header: 'Customer Name', accessor: 'name' as keyof Customer },
-    { header: 'Code', accessor: 'code' as keyof Customer },
-    { 
-      header: 'Status', 
-      accessor: (row: Customer) => <StatusBadge lastSeenAt={null} status={row.status} /> 
+    {
+      header: 'Customer',
+      accessor: (row: Customer) => <NameCell name={row.name} code={row.code} />,
     },
     {
-      header: 'Actions',
+      header: 'Vendor',
+      accessor: (row: Customer) => <MonoCell>VEN-{row.vendor_id}</MonoCell>,
+      compact: true as const,
+    },
+    {
+      header: 'Status',
+      accessor: (row: Customer) => <StatusBadge lastSeenAt={null} status={row.status} />,
+      compact: true as const,
+    },
+    {
+      header: '',
       accessor: (row: Customer) => (
-        <button 
-          onClick={(e) => { e.stopPropagation(); navigate(`/admin/customers/${row.id}`); }}
-          className="text-brand-green hover:text-green-700 text-sm font-medium"
-        >
-          View Devices
-        </button>
-      )
-    }
+        <RowAction label="Devices" onClick={() => navigate(`/admin/customers/${row.id}`)} />
+      ),
+      align: 'right' as const,
+      compact: true as const,
+    },
   ];
+
+  const activeCustomers = customers.filter((c) => c.status === 'active').length;
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 animate-slide-up-fade">
-        <div className="flex justify-between items-end pb-2 border-b border-slate-200">
-          <div>
-            <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Customers</h2>
-            <p className="text-slate-600 mt-1">Manage all customers across all vendors.</p>
-          </div>
-          <button className="bg-brand-green hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm">
-            Add Customer
-          </button>
-        </div>
+      <PageHeader
+        eyebrow="Organisation"
+        title="Customers"
+        description="Every customer across all vendors. Select a customer to see the devices installed at their sites."
+        actions={
+          <Button variant="primary" icon={IconPlus}>
+            Add customer
+          </Button>
+        }
+      />
 
-        <DataTable columns={columns} data={customers} searchPlaceholder="Search customers..." onRowClick={(row) => navigate(`/admin/customers/${row.id}`)} />
-      </div>
+      <MetricStrip
+        className="mb-5"
+        items={[
+          { label: 'Total customers', value: customers.length, icon: IconCustomers },
+          { label: 'Active', value: activeCustomers, tone: 'ok' },
+          {
+            label: 'Vendors represented',
+            value: new Set(customers.map((c) => c.vendor_id)).size,
+            icon: IconVendors,
+          },
+        ]}
+      />
+
+      <DataTable
+        columns={columns}
+        data={customers}
+        searchPlaceholder="Search customers…"
+        onRowClick={(row) => navigate(`/admin/customers/${row.id}`)}
+        emptyTitle="No customers yet"
+        emptyHint="Customers are created under a vendor."
+      />
     </DashboardLayout>
   );
 }

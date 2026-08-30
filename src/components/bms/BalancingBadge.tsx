@@ -1,23 +1,25 @@
-import { FiZap, FiZapOff } from 'react-icons/fi';
+import { Badge } from '../ui/Badge';
+import { IconBalancing } from '../icons';
 
 interface BalancingBadgeProps {
   enabled: boolean;
 }
 
+/**
+ * BalancingBadge
+ *
+ * Passive balancing is informational, never a problem — it is the pack doing
+ * its job. It is therefore blue, and the idle state is deliberately quiet so a
+ * grid of 52 cells is not covered in badges competing with the voltages.
+ */
 export default function BalancingBadge({ enabled }: BalancingBadgeProps) {
-  if (enabled) {
-    return (
-      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-brand-blue/30 bg-brand-blue/10 text-brand-blue text-[10px] font-semibold tracking-wide uppercase">
-        <FiZap className="w-3 h-3" />
-        <span>Balancing</span>
-      </div>
-    );
+  if (!enabled) {
+    return <span className="label-technical !text-[9.5px] text-ink-4">Idle</span>;
   }
 
   return (
-    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-slate-600/30 bg-slate-700/10 text-slate-400 text-[10px] font-semibold tracking-wide uppercase">
-      <FiZapOff className="w-3 h-3" />
-      <span>Idle</span>
-    </div>
+    <Badge tone="info" size="xs" icon={IconBalancing}>
+      Balancing
+    </Badge>
   );
 }

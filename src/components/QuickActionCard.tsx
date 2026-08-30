@@ -1,34 +1,70 @@
-import { FiRefreshCw, FiDownload, FiClock, FiGrid } from 'react-icons/fi';
+import React from 'react';
+import { Panel, PanelHeader } from './ui/Panel';
+import { IconRefresh, IconDownload, IconHistory, IconModule } from './icons';
 
-export default function QuickActionCard() {
-  const actions = [
-    { label: 'Refresh', icon: FiRefreshCw, primary: true },
-    { label: 'Export Data', icon: FiDownload },
-    { label: 'View History', icon: FiClock },
-    { label: 'Module Details', icon: FiGrid },
-  ];
+export interface QuickAction {
+  label: string;
+  icon: React.ComponentType<{ size?: number | string; className?: string }>;
+  onClick?: () => void;
+  description?: string;
+}
 
+const DEFAULT_ACTIONS: QuickAction[] = [
+  { label: 'Refresh telemetry', icon: IconRefresh, description: 'Re-poll the gateway' },
+  { label: 'Export window', icon: IconDownload, description: 'CSV of current range' },
+  { label: 'Open history', icon: IconHistory, description: 'Stored intervals' },
+  { label: 'Inspect modules', icon: IconModule, description: 'Rack drill-down' },
+];
+
+/**
+ * QuickActionCard
+ *
+ * A stacked list rather than a tile grid: these are commands with consequences,
+ * and a labelled row with a short description is far easier to pick correctly
+ * than four equally-weighted icon squares.
+ */
+export default function QuickActionCard({
+  actions = DEFAULT_ACTIONS,
+  className = '',
+}: {
+  actions?: QuickAction[];
+  className?: string;
+}) {
   return (
-    <div className="premium-card p-5 h-full flex flex-col">
-      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">Quick Actions</h3>
-      <div className="grid grid-cols-2 gap-3 flex-1">
-        {actions.map((action, index) => {
+    <Panel flush className={`overflow-hidden flex flex-col ${className}`}>
+      <div className="px-5 pt-4">
+        <PanelHeader title="Actions" divided />
+      </div>
+
+      <ul className="divide-y divide-line">
+        {actions.map((action) => {
           const Icon = action.icon;
           return (
-            <button
-              key={index}
-              className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-all duration-200 group/btn hover:-translate-y-0.5 active:translate-y-0 ${
-                action.primary 
-                  ? 'bg-[#22C55E]/10 border-[#22C55E]/30 hover:bg-[#22C55E]/20 hover:border-[#22C55E]/50 text-[#22C55E]' 
-                  : 'bg-card border-border hover:bg-muted/50 hover:border-muted-foreground/30 text-muted-foreground'
-              }`}
-            >
-              <Icon className={`w-5 h-5 mb-2 transition-transform duration-200 group-hover/btn:scale-110 ${action.primary ? 'text-[#22C55E]' : 'text-muted-foreground group-hover/btn:text-foreground'}`} />
-              <span className={`text-xs font-medium transition-colors ${action.primary ? 'text-[#22C55E]' : 'text-muted-foreground group-hover/btn:text-foreground'}`}>{action.label}</span>
-            </button>
+            <li key={action.label}>
+              <button
+                type="button"
+                onClick={action.onClick}
+                className="group w-full flex items-center gap-3 px-5 py-3 text-left cursor-pointer
+                  transition-colors duration-150 hover:bg-surface-2
+                  focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand"
+              >
+                <Icon
+                  size={15}
+                  className="shrink-0 text-ink-4 group-hover:text-brand-ink transition-colors duration-150"
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13px] font-medium text-ink">{action.label}</span>
+                  {action.description && (
+                    <span className="block text-[11.5px] text-ink-4 mt-0.5">
+                      {action.description}
+                    </span>
+                  )}
+                </span>
+              </button>
+            </li>
           );
         })}
-      </div>
-    </div>
+      </ul>
+    </Panel>
   );
 }

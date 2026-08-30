@@ -1,135 +1,435 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* =============================================================================
+   SHADE ENERGY — DESIGN SYSTEM
+   A calm, technical, light interface for industrial energy storage.
+   Warm off-white canvas · crisp white instrument surfaces · restrained accent.
+   ========================================================================== */
 
 @theme {
-  /* Design System Colors */
-  --color-primary: #111827;
-  --color-on-primary: #FFFFFF;
-  --color-secondary: #E5E7EB;
-  --color-on-secondary: #111827;
-  --color-accent: #10B981;
-  --color-on-accent: #FFFFFF;
-  --color-background: #F4F4F5;
-  --color-foreground: #09090B;
-  --color-card: #FFFFFF;
-  --color-card-foreground: #09090B;
-  --color-muted: #F4F4F5;
-  --color-muted-foreground: #71717A;
-  --color-border: #E4E4E7;
-  --color-destructive: #EF4444;
-  --color-on-destructive: #FFFFFF;
-  --color-ring: #10B981;
+  /* ---------------------------------------------------------------------
+     NEUTRALS — warm off-white canvas, clean instrument surfaces
+     --------------------------------------------------------------------- */
+  --color-canvas:      #F4F4F1;  /* app background — warm neutral */
+  --color-canvas-2:    #EBEBE6;  /* recessed regions, table headers */
+  --color-surface:     #FFFFFF;  /* primary instrument surface */
+  --color-surface-2:   #FAFAF8;  /* nested / sunken surface */
+  --color-surface-3:   #F1F1ED;  /* deepest inset, e.g. data wells */
 
-  /* Legacy aliases (to prevent immediate breakage) */
-  --color-brand-blue: #3B82F6; 
-  --color-brand-green: #10B981;
-  --color-brand-amber: #F59E0B;
-  --color-brand-dark: #111827;
-  --color-brand-light: #F9FAFB;
-  --color-bg-dark: #F4F4F5;
-  --color-sidebar-dark: #FFFFFF;
-  --color-card-dark: #FFFFFF;
+  /* Ink scale — near-black through faint */
+  --color-ink:         #17181A;  /* headings, primary values */
+  --color-ink-2:       #43464B;  /* body copy */
+  --color-ink-3:       #6E7278;  /* labels, secondary */
+  --color-ink-4:       #9A9EA5;  /* faint, axis ticks, placeholders */
+
+  /* Hairlines */
+  --color-line:        #E4E4DF;  /* default separator */
+  --color-line-2:      #D3D3CC;  /* emphasized separator */
+  --color-line-3:      #BFBFB7;  /* strong / focused edge */
+
+  /* ---------------------------------------------------------------------
+     BRAND — Shade Energy green. Used for identity, primary action,
+     and "operational" meaning only. Never decoratively.
+     --------------------------------------------------------------------- */
+  --color-brand:         #10B981;  /* fills, indicators */
+  --color-brand-ink:     #047857;  /* accessible text/icon on white (7.0:1) */
+  --color-brand-deep:    #065F46;  /* pressed, high-emphasis text */
+  --color-brand-surface: #ECFDF5;  /* tint */
+  --color-brand-line:    #A7F3D0;  /* tinted border */
+
+  /* ---------------------------------------------------------------------
+     SEMANTIC STATUS — each triple is AA-legible on white
+     ok · warn · crit · info · idle
+     --------------------------------------------------------------------- */
+  --color-ok:            #10B981;
+  --color-ok-ink:        #047857;
+  --color-ok-surface:    #ECFDF5;
+  --color-ok-line:       #A7F3D0;
+
+  --color-warn:          #F59E0B;
+  --color-warn-ink:      #B45309;
+  --color-warn-surface:  #FFFBEB;
+  --color-warn-line:     #FDE68A;
+
+  --color-crit:          #EF4444;
+  --color-crit-ink:      #B91C1C;
+  --color-crit-surface:  #FEF2F2;
+  --color-crit-line:     #FECACA;
+
+  --color-info:          #3B82F6;
+  --color-info-ink:      #1D4ED8;
+  --color-info-surface:  #EFF6FF;
+  --color-info-line:     #BFDBFE;
+
+  --color-idle:          #A1A1AA;
+  --color-idle-ink:      #52525B;
+  --color-idle-surface:  #F4F4F5;
+  --color-idle-line:     #E4E4E7;
+
+  /* ---------------------------------------------------------------------
+     LEGACY ALIASES — retained so existing utility usage stays coherent.
+     These now resolve to the new system rather than the old values.
+     --------------------------------------------------------------------- */
+  --color-background:        var(--color-canvas);
+  --color-foreground:        var(--color-ink);
+  --color-card:              var(--color-surface);
+  --color-card-foreground:   var(--color-ink);
+  --color-muted:             var(--color-surface-3);
+  --color-muted-foreground:  var(--color-ink-3);
+  --color-border:            var(--color-line);
+  --color-primary:           var(--color-ink);
+  --color-on-primary:        #FFFFFF;
+  --color-primary-foreground:#FFFFFF;
+  --color-secondary:         var(--color-canvas-2);
+  --color-on-secondary:      var(--color-ink);
+  --color-accent:            var(--color-brand);
+  --color-on-accent:         #FFFFFF;
+  --color-destructive:       var(--color-crit);
+  --color-on-destructive:    #FFFFFF;
+  --color-ring:              var(--color-brand);
+  --color-brand-green:       var(--color-brand);
+  --color-brand-blue:        var(--color-info);
+  --color-brand-amber:       var(--color-warn);
+  --color-brand-dark:        var(--color-ink);
+  --color-brand-light:       var(--color-canvas);
+  --color-bg-dark:           var(--color-canvas);
+  --color-sidebar-dark:      var(--color-surface);
+  --color-card-dark:         var(--color-surface);
+
+  /* ---------------------------------------------------------------------
+     TYPE
+     --------------------------------------------------------------------- */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ---------------------------------------------------------------------
+     ELEVATION — hairline-first. Depth comes from borders, not shadow.
+     --------------------------------------------------------------------- */
+  --shadow-e1: 0 1px 2px rgba(23, 24, 26, 0.04);
+  --shadow-e2: 0 1px 2px rgba(23, 24, 26, 0.05), 0 4px 10px -4px rgba(23, 24, 26, 0.07);
+  --shadow-e3: 0 4px 10px -3px rgba(23, 24, 26, 0.09), 0 14px 34px -10px rgba(23, 24, 26, 0.14);
+  --shadow-e4: 0 8px 20px -6px rgba(23, 24, 26, 0.16), 0 36px 72px -20px rgba(23, 24, 26, 0.26);
+
+  /* ---------------------------------------------------------------------
+     RADII — restrained. Instruments are not pills.
+     --------------------------------------------------------------------- */
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 7px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+
+  /* Motion */
+  --ease-precise: cubic-bezier(0.2, 0.8, 0.24, 1);
+  --ease-exit:    cubic-bezier(0.4, 0, 1, 1);
 }
 
+/* =============================================================================
+   BASE
+   ========================================================================== */
 @layer base {
+  * {
+    border-color: var(--color-line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv05' 1, 'cv11' 1, 'ss01' 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Headings hold tight optical tracking at display sizes */
+  h1, h2, h3, h4 {
+    letter-spacing: -0.018em;
+    color: var(--color-ink);
+  }
+
+  ::selection {
+    background: var(--color-brand-line);
+    color: var(--color-brand-deep);
+  }
+
+  /* Numeric fields never reflow while live values tick */
+  input[type='number'],
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Visible, on-brand focus for keyboard users only */
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
   }
 }
 
+/* =============================================================================
+   COMPONENT PRIMITIVES
+   ========================================================================== */
 @layer components {
+
+  /* --- Typographic roles -------------------------------------------------- */
+
+  /* Small caps label used above every value in the system */
   .label-technical {
-    @apply text-[10px] uppercase tracking-widest font-bold text-muted-foreground;
+    font-size: 10px;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    font-weight: 600;
+    color: var(--color-ink-3);
   }
+
+  /* Telemetry, identifiers, timestamps — anything machine-generated */
   .data-technical {
-    @apply font-['JetBrains_Mono'] tracking-tight;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  /* Section title sitting directly on the canvas */
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.006em;
+    color: var(--color-ink);
+  }
+
+  /* --- Surfaces ----------------------------------------------------------- */
+
+  /* The single card primitive. Border-defined, barely-there shadow. */
+  .surface {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-e1);
+  }
+
+  /* Interactive surface — lifts on hover without translating layout */
+  .surface-interactive {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-e1);
+    transition:
+      border-color 160ms var(--ease-precise),
+      box-shadow 160ms var(--ease-precise),
+      background-color 160ms var(--ease-precise);
+  }
+  .surface-interactive:hover {
+    border-color: var(--color-line-2);
+    box-shadow: var(--shadow-e2);
+  }
+
+  /* Recessed well for dense data (cell maps, code, readouts) */
+  .well {
+    background-color: var(--color-surface-2);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+  }
+
+  /* Backwards-compatible alias for the previous card class */
+  .premium-card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-e1);
+    color: var(--color-ink);
+    transition:
+      border-color 160ms var(--ease-precise),
+      box-shadow 160ms var(--ease-precise);
+  }
+  .premium-card:hover {
+    border-color: var(--color-line-2);
+    box-shadow: var(--shadow-e2);
+  }
+
+  /* --- Blueprint texture -------------------------------------------------- */
+  /* Faint engineering grid. Signals "instrument", never decorates alone. */
+  .blueprint-grid {
+    background-image:
+      linear-gradient(to right, rgba(23, 24, 26, 0.035) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(23, 24, 26, 0.035) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  /* --- Scrollbars --------------------------------------------------------- */
+  .scrollbar-fine {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-2) transparent;
+  }
+  .scrollbar-fine::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-fine::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-fine::-webkit-scrollbar-thumb {
+    background-color: var(--color-line-2);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  .scrollbar-fine::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-line-3);
+  }
+
+  /* Legacy alias */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-2) transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--color-line-2);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: content-box;
   }
 }
 
-/* Custom keyframes for premium transitions */
+/* =============================================================================
+   MOTION
+   Every animation communicates state or interaction. Nothing loops for show.
+   ========================================================================== */
+
 @keyframes fadeIn {
   from { opacity: 0; }
-  to { opacity: 1; }
+  to   { opacity: 1; }
 }
 
 @keyframes slideUpFade {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-16px); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes scaleUp {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
-/* Animation utilities */
-.animate-fade-in {
-  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+/* Dropdown/popover entrance — anchored, so it grows from its trigger edge */
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.animate-slide-up-fade {
-  animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+/* Menu entrance for surfaces that open OVER telemetry.
+   Deliberately animates position only: a fading panel is translucent for the
+   length of the fade, and during those frames voltage digits read through the
+   option labels. Movement alone gives the same sense of origin with no frame
+   in which the surface is see-through. */
+@keyframes menuIn {
+  from { transform: translateY(-5px) scale(0.985); }
+  to   { transform: translateY(0) scale(1); }
 }
 
-.animate-slide-in-left {
-  animation: slideInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+/* Modal entrance */
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.animate-scale-up {
-  animation: scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+/* Live telemetry pulse — a slow, calm breath, not a blink */
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.45; transform: scale(0.86); }
 }
 
-/* Premium Card Style */
-.premium-card {
-  background-color: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: all 200ms ease-in-out;
-  color: var(--color-card-foreground);
+/* Expanding ring behind a live indicator */
+@keyframes liveRing {
+  0%   { opacity: 0.5; transform: scale(1); }
+  80%  { opacity: 0;   transform: scale(2.4); }
+  100% { opacity: 0;   transform: scale(2.4); }
 }
 
-.premium-card:hover {
-  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-  border-color: #475569;
+/* Draws a chart series / gauge arc in on mount */
+@keyframes drawIn {
+  from { stroke-dashoffset: var(--dash-length, 1000); }
+  to   { stroke-dashoffset: var(--dash-offset, 0); }
 }
 
-/* Eye icon toggle rotational transitions */
+/* Indeterminate sweep for loading rails */
+@keyframes shimmer {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+
+/* Critical attention — border only, no glow */
+@keyframes attention {
+  0%, 100% { border-color: var(--color-crit-line); }
+  50%      { border-color: var(--color-crit); }
+}
+
+.animate-fade-in       { animation: fadeIn 240ms var(--ease-precise) both; }
+.animate-fadeIn        { animation: fadeIn 240ms var(--ease-precise) both; }
+.animate-slide-up-fade { animation: slideUpFade 320ms var(--ease-precise) both; }
+.animate-slide-in-left { animation: slideInLeft 260ms var(--ease-precise) both; }
+.animate-scale-up      { animation: scaleUp 220ms var(--ease-precise) both; }
+.animate-pop-in        { animation: popIn 150ms var(--ease-precise) both; }
+.animate-menu-in       { animation: menuIn 160ms var(--ease-precise) both; }
+.animate-modal-in      { animation: modalIn 260ms var(--ease-precise) both; }
+.animate-live-pulse    { animation: livePulse 2.4s ease-in-out infinite; }
+.animate-live-ring     { animation: liveRing 2.4s var(--ease-precise) infinite; }
+.animate-draw-in       { animation: drawIn 900ms var(--ease-precise) both; }
+.animate-attention     { animation: attention 2s ease-in-out infinite; }
+.animate-pulse-glow    { animation: livePulse 2.4s ease-in-out infinite; }
+
+/* Staggered list/grid entrance. Depth is capped so long grids stay snappy. */
+.stagger > *  { animation: slideUpFade 320ms var(--ease-precise) both; }
+.stagger > *:nth-child(1)  { animation-delay: 0ms; }
+.stagger > *:nth-child(2)  { animation-delay: 24ms; }
+.stagger > *:nth-child(3)  { animation-delay: 48ms; }
+.stagger > *:nth-child(4)  { animation-delay: 72ms; }
+.stagger > *:nth-child(5)  { animation-delay: 96ms; }
+.stagger > *:nth-child(6)  { animation-delay: 120ms; }
+.stagger > *:nth-child(7)  { animation-delay: 132ms; }
+.stagger > *:nth-child(8)  { animation-delay: 144ms; }
+.stagger > *:nth-child(n+9) { animation-delay: 156ms; }
+
 .eye-icon-transition {
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+  transition: transform 220ms var(--ease-precise), opacity 160ms ease;
 }
 
-/* Respect user preference for reduced motion */
+/* Recharts: strip the default focus rectangle, keep our own affordances */
+.recharts-wrapper:focus,
+.recharts-surface:focus {
+  outline: none;
+}
+.recharts-cartesian-axis-tick text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  fill: var(--color-ink-4);
+}
+
+/* =============================================================================
+   REDUCED MOTION
+   ========================================================================== */
 @media (prefers-reduced-motion: reduce) {
-  * {
-    animation-delay: 0s !important;
-    animation-duration: 0s !important;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0s !important;
+    transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
-    transform: none !important;
   }
-  .animate-slide-up-fade,
-  .animate-fade-in {
-    animation: none !important;
-  }
-  .premium-card:hover {
-    transform: none !important;
-  }
+  .animate-live-ring { display: none; }
 }

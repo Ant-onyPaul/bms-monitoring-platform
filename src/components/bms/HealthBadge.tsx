@@ -1,39 +1,43 @@
-import { FiCheckCircle, FiAlertTriangle, FiXCircle } from 'react-icons/fi';
-import { IconType } from 'react-icons';
+import { Badge, toneForHealth } from '../ui/Badge';
+import { IconCheckCircle, IconWarning, IconFault, IconOffline } from '../icons';
 
 interface HealthBadgeProps {
   status: string;
+  size?: 'xs' | 'sm';
+  /** Renders a bare dot + label, for tight grids like the cell map. */
+  compact?: boolean;
 }
 
-export default function HealthBadge({ status }: HealthBadgeProps) {
-  let config: { color: string; bg: string; border: string; icon: IconType; text: string } = {
-    color: 'text-red-500',
-    bg: 'bg-red-500/10',
-    border: 'border-red-500/20',
-    icon: FiXCircle,
-    text: status
-  };
+const ICONS: Record<string, any> = {
+  ok: IconCheckCircle,
+  warn: IconWarning,
+  crit: IconFault,
+  idle: IconOffline,
+};
 
-  switch (status.toLowerCase()) {
-    case 'healthy':
-      config = { color: 'text-brand-green', bg: 'bg-brand-green/10', border: 'border-brand-green/20', icon: FiCheckCircle, text: 'Healthy' };
-      break;
-    case 'warning':
-      config = { color: 'text-yellow-500', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', icon: FiAlertTriangle, text: 'Warning' };
-      break;
-    case 'fault':
-    case 'offline':
-    default:
-      config = { color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: FiXCircle, text: status };
-      break;
+/**
+ * HealthBadge
+ *
+ * Single source of truth for how a health string is rendered anywhere in the
+ * BMS views — module card, cell card, sensor card, table cell. Tone mapping
+ * lives in the shared vocabulary so "Warning" is the same amber everywhere.
+ */
+export default function HealthBadge({ status, size = 'xs', compact = false }: HealthBadgeProps) {
+  const tone = toneForHealth(status);
+  const Icon = ICONS[tone];
+  const label = status ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase() : 'Unknown';
+
+  if (compact) {
+    return (
+      <Badge tone={tone} size="xs" dot>
+        {label}
+      </Badge>
+    );
   }
 
-  const Icon = config.icon;
-
   return (
-    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${config.bg} ${config.border} border ${config.color} text-xs font-medium`}>
-      <Icon className="w-3.5 h-3.5" />
-      <span className="capitalize">{config.text}</span>
-    </div>
+    <Badge tone={tone} size={size} icon={Icon}>
+      {label}
+    </Badge>
   );
 }

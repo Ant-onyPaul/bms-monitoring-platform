@@ -68,6 +68,23 @@ export function niceDomain(min: number, max: number): [number, number] {
 }
 
 /**
+ * Domain plus the exact ticks that go with it.
+ *
+ * Passing Recharts a domain alone lets it re-derive its own ticks, which can
+ * land on uneven spacing (35 / 38 / 41 / 45). Supplying both keeps the gaps
+ * equal, which is the whole point of a linear axis.
+ */
+export function niceAxis(min: number, max: number): { domain: [number, number]; ticks: number[] } {
+  const domain = niceDomain(min, max);
+  const step = niceStep((domain[1] - domain[0]) / 4);
+  const ticks: number[] = [];
+  for (let v = domain[0]; v <= domain[1] + step / 1000; v += step) {
+    ticks.push(Number(v.toFixed(6)));
+  }
+  return { domain, ticks };
+}
+
+/**
  * Bar charts get a zero baseline.
  *
  * Bar length encodes magnitude, so truncating the axis exaggerates differences

@@ -536,3 +536,45 @@ export const IconSpark = (p: IconProps) => (
     <path d="M12 15.3v6.2" />
   </Svg>
 );
+
+/* --- Operating state -------------------------------------------------------
+   The three states share the same battery housing so they read as one family;
+   only the glyph inside changes. That makes the state legible at 14px in a
+   badge, where a colour change alone would not be enough.
+   -------------------------------------------------------------------------- */
+
+/** Charging — energy entering the pack. */
+export const IconCharging = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="2.25" y="6.5" width="16.5" height="11" rx="2" />
+    <path d="M21.5 10v4" />
+    <path d="M11.9 8.7 8.4 13.1h3.2l-.5 3.3 3.5-4.4h-3.2l.5-3.3Z" />
+  </Svg>
+);
+
+/** Discharging — energy leaving the pack through the terminal. */
+export const IconDischarging = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="2.25" y="6.5" width="16.5" height="11" rx="2" />
+    <path d="M21.5 10v4" />
+    <path d="M6.4 12h7.2" />
+    <path d="m11.2 9.5 2.5 2.5-2.5 2.5" />
+  </Svg>
+);
+
+/** Idle — connected but not transferring energy. */
+export const IconIdle = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="2.25" y="6.5" width="16.5" height="11" rx="2" />
+    <path d="M21.5 10v4" />
+    <path d="M8.5 9.9v4.2M13.1 9.9v4.2" />
+  </Svg>
+);
+
+/** Energy throughput — kWh counters. */
+export const IconEnergy = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3.2" y="3.2" width="17.6" height="17.6" rx="3" />
+    <path d="M12.7 7.1 9.3 12.3h2.9l-.6 4.6 3.5-5.4h-2.9l.5-4.4Z" />
+  </Svg>
+);

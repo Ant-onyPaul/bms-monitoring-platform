@@ -6,6 +6,8 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
+  Line,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -19,25 +21,43 @@ import {
   ChartTooltip,
   Y_AXIS_WIDTH,
   CHART_MARGIN,
-  niceDomain,
+  niceAxis,
   barDomain,
+  LegendSwatches,
 } from './ui/chartTheme';
+
+/** One plotted series. Used when a chart carries more than a single measure. */
+export interface ChartSeries {
+  key: string;
+  /** Legend and tooltip label. */
+  name: string;
+  color: string;
+  data: number[];
+  /** Overrides the card's `type` for this series, e.g. a line over bars. */
+  type?: 'line' | 'bar' | 'area';
+}
 
 export interface ChartCardProps {
   title: string;
   type: 'line' | 'bar';
-  /** Series values. Index maps to `labels` when supplied. */
-  data: number[];
-  /** Legacy hex colour; still honoured. */
+  /** Single-series values. Index maps to `labels` when supplied. */
+  data?: number[];
+  /** Multi-series form. Takes precedence over `data` and enables the legend. */
+  series?: ChartSeries[];
+  /** Legacy hex colour for the single-series form. */
   color?: string;
-  /** Axis/tooltip unit, e.g. "%", "mV", "°C". */
+  /** Measure and unit for the Y axis, e.g. "Current (A)". Shown beside the title. */
   unit?: string;
+  /** Caption under the X axis, e.g. "Time" or "Date". */
+  xLabel?: string;
   /** Real category labels. Falls back to sample indices. */
   labels?: string[];
   /** Explicit Y domain; otherwise derived with headroom. */
   domain?: [number, number];
   /** Horizontal reference, e.g. a mean or a limit. */
   reference?: { value: number; label: string };
+  /** Draws a zero line — essential where sign carries meaning (charge vs discharge). */
+  zeroLine?: boolean;
   /** Sentence under the header explaining what the reader is looking at. */
   caption?: string;
   /** Trailing header controls. */
@@ -50,20 +70,25 @@ export interface ChartCardProps {
 /**
  * ChartCard
  *
- * Charts here are instruments, not texture. Every one carries a unit on the Y
- * axis and real category labels on the X axis, and bar charts colour each bar
- * by whether it sits inside the nominal band — so the distribution can be read
- * without hovering anything.
+ * Charts here are instruments, not texture. Every one carries its measure and
+ * unit beside the title, real category labels on the X axis, and an explicit
+ * axis caption — so the chart can be read without hovering anything.
+ *
+ * Bar charts are zero-based (length encodes magnitude, so a truncated axis
+ * would lie); line charts may be zoomed to their range.
  */
 export default function ChartCard({
   title,
   type,
   data,
+  series,
   color = '#10B981',
   unit = '',
+  xLabel,
   labels,
   domain,
   reference,
+  zeroLine = false,
   caption,
   actions,
   height = 220,
@@ -72,51 +97,78 @@ export default function ChartCard({
 }: ChartCardProps) {
   const gradientId = useId().replace(/:/g, '');
 
-  const chartData = data.map((value, index) => ({
-    name: labels?.[index] ?? `${index + 1}`,
-    value,
-  }));
+  // Normalise both input forms into one series list.
+  const resolved: ChartSeries[] =
+    series && series.length > 0
+      ? series
+      : [{ key: 'value', name: title, color, data: data ?? [] }];
 
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const yDomain = domain ?? (type === 'bar' ? barDomain(max) : niceDomain(min, max));
+  const length = Math.max(...resolved.map((s) => s.data.length), 0);
 
-  // Bars outside one standard deviation read as outliers and are tinted amber.
-  const mean = data.reduce((a, b) => a + b, 0) / (data.length || 1);
+  const chartData = Array.from({ length }, (_, index) => {
+    const row: Record<string, string | number> = {
+      name: labels?.[index] ?? `${index + 1}`,
+    };
+    resolved.forEach((s) => {
+      row[s.key] = s.data[index];
+    });
+    return row;
+  });
+
+  const allValues = resolved.flatMap((s) => s.data).filter((v) => Number.isFinite(v));
+  const min = allValues.length ? Math.min(...allValues) : 0;
+  const max = allValues.length ? Math.max(...allValues) : 1;
+
+  const derived = type === 'bar' && min >= 0 ? { domain: barDomain(max), ticks: undefined } : niceAxis(min, max);
+  const yDomain = domain ?? derived.domain;
+  // Explicit ticks only when we derived the domain ourselves.
+  const yTicks = domain ? undefined : derived.ticks;
+
+  // Single-series bars tint outliers so the distribution reads without hovering.
+  const isSingle = resolved.length === 1;
+  const mean = allValues.reduce((a, b) => a + b, 0) / (allValues.length || 1);
   const deviation = Math.sqrt(
-    data.reduce((sum, value) => sum + (value - mean) ** 2, 0) / (data.length || 1),
+    allValues.reduce((sum, v) => sum + (v - mean) ** 2, 0) / (allValues.length || 1),
   );
+
+  const showLegend = resolved.length > 1;
 
   return (
     <Panel className={`flex flex-col ${className}`}>
       <PanelHeader
         title={title}
         icon={icon}
-        meta={unit ? `in ${unit}` : undefined}
+        meta={unit || undefined}
         actions={actions}
       />
 
-      {caption && <p className="-mt-2 mb-4 text-[12px] text-ink-3 leading-relaxed">{caption}</p>}
+      {caption && <p className="-mt-2 mb-3 text-[12px] text-ink-3 leading-relaxed">{caption}</p>}
 
-      {/* shrink-0: inside a flex-column Panel that shares a grid row with a
-          taller sibling, a growable wrapper collapses the chart to nothing. */}
+      {showLegend && (
+        <LegendSwatches
+          className="mb-3"
+          items={resolved.map((s) => ({ color: s.color, label: s.name }))}
+        />
+      )}
+
       <div className="w-full shrink-0 mt-auto" style={{ height }}>
         <ResponsiveContainer width="100%" height="100%">
-          {type === 'line' ? (
+          {type === 'line' && isSingle ? (
             <AreaChart data={chartData} margin={CHART_MARGIN}>
               <defs>
                 <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={color} stopOpacity={0.16} />
-                  <stop offset="100%" stopColor={color} stopOpacity={0} />
+                  <stop offset="0%" stopColor={resolved[0].color} stopOpacity={0.16} />
+                  <stop offset="100%" stopColor={resolved[0].color} stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid {...gridProps} />
               <XAxis dataKey="name" {...axisProps} minTickGap={24} />
-              <YAxis {...axisProps} domain={yDomain} width={Y_AXIS_WIDTH} tickCount={5} />
+              <YAxis {...axisProps} domain={yDomain} ticks={yTicks} width={Y_AXIS_WIDTH} tickCount={5} />
               <Tooltip
                 content={<ChartTooltip unit={unit} />}
                 cursor={{ stroke: 'var(--color-line-2)', strokeWidth: 1 }}
               />
+              {zeroLine && <ReferenceLine y={0} stroke="var(--color-line-3)" strokeWidth={1} />}
               {reference && (
                 <ReferenceLine
                   y={reference.value}
@@ -132,21 +184,26 @@ export default function ChartCard({
               )}
               <Area
                 type="monotone"
-                dataKey="value"
-                name={title}
-                stroke={color}
+                dataKey={resolved[0].key}
+                name={resolved[0].name}
+                stroke={resolved[0].color}
                 strokeWidth={1.75}
                 fill={`url(#${gradientId})`}
                 dot={false}
-                activeDot={{ r: 3.5, fill: color, stroke: 'var(--color-surface)', strokeWidth: 2 }}
+                activeDot={{
+                  r: 3.5,
+                  fill: resolved[0].color,
+                  stroke: 'var(--color-surface)',
+                  strokeWidth: 2,
+                }}
                 animationDuration={700}
               />
             </AreaChart>
-          ) : (
+          ) : type === 'bar' && isSingle ? (
             <BarChart data={chartData} margin={CHART_MARGIN}>
               <CartesianGrid {...gridProps} />
               <XAxis dataKey="name" {...axisProps} interval={0} minTickGap={2} />
-              <YAxis {...axisProps} domain={yDomain} width={Y_AXIS_WIDTH} tickCount={5} />
+              <YAxis {...axisProps} domain={yDomain} ticks={yTicks} width={Y_AXIS_WIDTH} tickCount={5} />
               <Tooltip
                 content={<ChartTooltip unit={unit} />}
                 cursor={{ fill: 'var(--color-surface-3)' }}
@@ -154,18 +211,89 @@ export default function ChartCard({
               {reference && (
                 <ReferenceLine y={reference.value} stroke="var(--color-ink-4)" strokeDasharray="3 3" />
               )}
-              <Bar dataKey="value" name={title} radius={[2, 2, 0, 0]} animationDuration={600}>
-                {chartData.map((entry, index) => (
+              <Bar
+                dataKey={resolved[0].key}
+                name={resolved[0].name}
+                radius={[2, 2, 0, 0]}
+                animationDuration={600}
+              >
+                {chartData.map((row, index) => (
                   <Cell
                     key={index}
-                    fill={Math.abs(entry.value - mean) > deviation ? '#F59E0B' : color}
+                    fill={
+                      Math.abs(Number(row[resolved[0].key]) - mean) > deviation
+                        ? '#F59E0B'
+                        : resolved[0].color
+                    }
                   />
                 ))}
               </Bar>
             </BarChart>
+          ) : (
+            /* Multi-series: one composed chart so bars and lines can share axes. */
+            <ComposedChart data={chartData} margin={CHART_MARGIN}>
+              <CartesianGrid {...gridProps} />
+              <XAxis dataKey="name" {...axisProps} minTickGap={16} />
+              <YAxis {...axisProps} domain={yDomain} ticks={yTicks} width={Y_AXIS_WIDTH} tickCount={5} />
+              <Tooltip
+                content={<ChartTooltip unit={unit} />}
+                cursor={{ fill: 'var(--color-surface-3)' }}
+              />
+              {zeroLine && <ReferenceLine y={0} stroke="var(--color-line-3)" strokeWidth={1} />}
+              {reference && (
+                <ReferenceLine
+                  y={reference.value}
+                  stroke="var(--color-ink-4)"
+                  strokeDasharray="3 3"
+                  label={{
+                    value: reference.label,
+                    position: 'insideTopRight',
+                    fill: 'var(--color-ink-4)',
+                    fontSize: 10,
+                  }}
+                />
+              )}
+              {resolved.map((s) => {
+                const kind = s.type ?? type;
+                if (kind === 'line') {
+                  return (
+                    <Line
+                      key={s.key}
+                      type="monotone"
+                      dataKey={s.key}
+                      name={s.name}
+                      stroke={s.color}
+                      strokeWidth={1.75}
+                      dot={false}
+                      activeDot={{
+                        r: 3.5,
+                        fill: s.color,
+                        stroke: 'var(--color-surface)',
+                        strokeWidth: 2,
+                      }}
+                      animationDuration={700}
+                    />
+                  );
+                }
+                return (
+                  <Bar
+                    key={s.key}
+                    dataKey={s.key}
+                    name={s.name}
+                    fill={s.color}
+                    radius={[2, 2, 0, 0]}
+                    animationDuration={600}
+                  />
+                );
+              })}
+            </ComposedChart>
           )}
         </ResponsiveContainer>
       </div>
+
+      {xLabel && (
+        <p className="mt-2 text-center label-technical !text-[9.5px] text-ink-4">{xLabel}</p>
+      )}
     </Panel>
   );
 }

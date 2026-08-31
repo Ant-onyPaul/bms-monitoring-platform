@@ -1,30 +1,15 @@
 import { useMemo, useState } from 'react';
 import AlertCard, { AlertItem } from './../AlertCard';
+import { getSystemTelemetry } from '../../data/bmsTelemetry';
 import { Panel } from '../ui/Panel';
 import { Readout } from '../ui/Metric';
 import PageHeader from '../PageHeader';
 import { IconFault, IconWarning, IconInfo } from '../icons';
 
-// Mock Data
-const alertsData: AlertItem[] = [
-  {
-    type: 'warning',
-    message: 'Module 3 Temperature High',
-    time: '2 minutes ago',
-    source: 'Rack 1 · Module 03',
-    code: 'OT-1140',
-    detail:
-      'NTC 4 reported 38.5 °C, 3.5 °C above the module mean. Airflow at the rack inlet should be checked before the next charge cycle.',
-  },
-  {
-    type: 'fault',
-    message: 'Cell 12 Voltage Low',
-    time: '15 minutes ago',
-    source: 'Rack 1 · Module 01 · Cell 12',
-    code: 'UV-2101',
-    detail:
-      'Cell held 3,420 mV under load, 280 mV below the module mean. Balancing has been requested; if the spread persists across two cycles the cell should be flagged for replacement.',
-  },
+/* Informational events have no fault record behind them, so they stay static.
+   Faults and warnings are derived from the telemetry model, which keeps the
+   names and codes here identical to the fault banner and the rack screen. */
+const INFO_EVENTS: AlertItem[] = [
   {
     type: 'info',
     message: 'Realtime connection established',
@@ -34,24 +19,23 @@ const alertsData: AlertItem[] = [
     detail: 'Telemetry stream resumed at a 1 s sample interval. No frames dropped since resync.',
   },
   {
-    type: 'warning',
-    message: 'SOC imbalance detected',
-    time: '1 hour ago',
-    source: 'Rack 2 · Module 08',
-    code: 'IMB-3007',
-    detail:
-      'Module reported a 0.15 V spread against its rack peers. Passive balancing engaged on four cells; expected to resolve within two full cycles.',
-  },
-  {
     type: 'info',
     message: 'Firmware update completed',
     time: '2 days ago',
-    source: 'Device · BMS-A001',
+    source: 'Device · controller',
     code: 'FW-2143',
     detail:
       'Controller updated to v2.14.3. Protection thresholds and calibration data were preserved through the update.',
   },
 ];
+
+/** Relative age of a fault, for the log's timestamp column. */
+function relativeAge(iso: string) {
+  const minutes = Math.max(1, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+  const hours = Math.round(minutes / 60);
+  return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+}
 
 const FILTERS = [
   { id: 'all', label: 'All events' },
@@ -77,6 +61,30 @@ interface BmsAlertsProps {
 export function BmsAlerts({ deviceId }: BmsAlertsProps) {
   const [filter, setFilter] = useState<FilterId>('all');
 
+  const alertsData = useMemo<AlertItem[]>(() => {
+    const telemetry = getSystemTelemetry(deviceId || 'default');
+    const faults: AlertItem[] = telemetry.racks
+      .filter((rack) => rack.fault)
+      .map((rack) => {
+        const fault = rack.fault!;
+        return {
+          type: fault.severity,
+          message: fault.name,
+          time: relativeAge(fault.raisedAt),
+          source: fault.source,
+          code: fault.code,
+          detail: fault.detail,
+        };
+      });
+
+    // Faults first, then warnings, then the informational tail.
+    return [
+      ...faults.filter((f) => f.type === 'fault'),
+      ...faults.filter((f) => f.type === 'warning'),
+      ...INFO_EVENTS,
+    ];
+  }, [deviceId]);
+
   const counts = useMemo(
     () => ({
       all: alertsData.length,
@@ -84,12 +92,12 @@ export function BmsAlerts({ deviceId }: BmsAlertsProps) {
       warning: alertsData.filter((a) => a.type === 'warning').length,
       info: alertsData.filter((a) => a.type === 'info').length,
     }),
-    [],
+    [alertsData],
   );
 
   const visible = useMemo(
     () => (filter === 'all' ? alertsData : alertsData.filter((a) => a.type === filter)),
-    [filter],
+    [filter, alertsData],
   );
 
   return (

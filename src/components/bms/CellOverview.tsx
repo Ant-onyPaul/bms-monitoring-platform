@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import ModuleSelector, { ModuleItem } from './ModuleSelector';
+import { getModuleCells, getSystemTelemetry, TOPOLOGY } from '../../data/bmsTelemetry';
 import CellCard, { BmsCell } from './CellCard';
 import SensorCard, { BmsSensor } from './SensorCard';
 import { Panel, PanelHeader } from '../ui/Panel';
@@ -16,43 +17,36 @@ import {
   IconTemperature,
 } from '../icons';
 
-// Dummy Data Generators
-const MODULES: ModuleItem[] = [
-  { id: 'rack-1-mod-1', name: 'Module 01', meta: '52 cells' },
-  { id: 'rack-1-mod-2', name: 'Module 02', meta: '52 cells' },
-  { id: 'rack-1-mod-3', name: 'Module 03', meta: '52 cells' },
-  { id: 'rack-1-mod-4', name: 'Module 04', meta: '52 cells' },
-];
+/**
+ * Cells for the selected module, read from the shared telemetry model.
+ *
+ * This screen previously generated its own unrelated set, so the cell map and
+ * the rack extremes table described the same hardware differently. It now reads
+ * the same source; the layout of this screen is otherwise untouched, since the
+ * company has marked it for future use.
+ */
 
-const generateDummyCells = (moduleId: string): BmsCell[] => {
-  const count = 52;
-  const cells: BmsCell[] = [];
+/**
+ * Splits a `rack-{n}-mod-{m}` identifier into its 1-indexed positions.
+ *
+ * Returns null for anything unrecognised so callers can decide what to do —
+ * previously this silently returned rack 1 / module 1, which is how a valid
+ * selection ended up displaying the wrong module.
+ */
+const parseModuleId = (moduleId?: string) => {
+  const match = moduleId ? /^rack-(\d+)-mod-(\d+)$/.exec(moduleId) : null;
+  return match ? { rack: Number(match[1]), module: Number(match[2]) } : null;
+};
 
-  for (let i = 1; i <= count; i++) {
-    const baseVoltage = 3700;
-    let voltage = baseVoltage + Math.floor(Math.random() * 20 - 10);
-    let health = 'Healthy';
-    let balancing = Math.random() > 0.8;
-
-    // Add specific variances for realism
-    if (i === 8 && moduleId === 'rack-1-mod-1') {
-      voltage = 3420;
-      health = 'Warning';
-    } else if (i === 22 && moduleId === 'rack-1-mod-1') {
-      voltage = 3760;
-    } else if (voltage < 3600 || voltage > 3750) {
-      health = 'Warning';
-    }
-
-    cells.push({
-      id: `cell-${i}`,
-      name: `Cell ${i.toString().padStart(2, '0')}`,
-      voltage: voltage,
-      health: health,
-      balancing: balancing,
-    });
-  }
-  return cells;
+const generateDummyCells = (moduleId: string, deviceId: string): BmsCell[] => {
+  const { rack, module } = parseModuleId(moduleId);
+  return getModuleCells(deviceId, rack, module).map((cell) => ({
+    id: `cell-${cell.cell}`,
+    name: `Cell ${String(cell.cell).padStart(2, '0')}`,
+    voltage: cell.voltageMv,
+    health: cell.voltageMv < 3600 || cell.voltageMv > 3750 ? 'Warning' : 'Healthy',
+    balancing: cell.voltageMv > 3705,
+  }));
 };
 
 const generateDummySensors = (moduleId: string): BmsSensor[] => {
@@ -84,11 +78,38 @@ interface CellOverviewProps {
    ========================================================================== */
 
 export function CellOverview({ deviceId, moduleId }: CellOverviewProps) {
-  const initialModule = MODULES.find((m) => m.id === moduleId) || MODULES[0];
+  const key = deviceId || 'default';
+  const telemetry = useMemo(() => getSystemTelemetry(key), [key]);
+
+  /* The module list is the rack's actual population, not a fixed set of four.
+     Scoping it to the rack that owns the incoming module keeps the
+     device → rack → module → cell hierarchy intact and keeps the selector to a
+     usable length, while guaranteeing the drilled-into module is always in it. */
+  const address = parseModuleId(moduleId);
+  const rack =
+    telemetry.racks.find((r) => r.id === `rack-${address?.rack ?? 1}`) ?? telemetry.racks[0];
+
+  const modules: ModuleItem[] = useMemo(
+    () =>
+      rack.modules.map((m) => ({
+        id: m.id,
+        name: m.name,
+        meta: `${TOPOLOGY.cellsPerModule} cells`,
+      })),
+    [rack],
+  );
+
+  /* Resolve the requested module. The only time we fall back to the first entry
+     is when the view is opened with no selection at all — a valid id is never
+     discarded. */
+  const initialModule = (moduleId && modules.find((m) => m.id === moduleId)) || modules[0];
   const [selectedModule, setSelectedModule] = useState<ModuleItem>(initialModule);
 
   // Generate data based on selected module
-  const cells = useMemo(() => generateDummyCells(selectedModule.id), [selectedModule.id]);
+  const cells = useMemo(
+    () => generateDummyCells(selectedModule.id, deviceId || 'default'),
+    [selectedModule.id, deviceId],
+  );
   const sensors = useMemo(() => generateDummySensors(selectedModule.id), [selectedModule.id]);
 
   // Calculate stats
@@ -120,14 +141,15 @@ export function CellOverview({ deviceId, moduleId }: CellOverviewProps) {
       <PageHeader
         eyebrow="Module drill-down"
         title="Cell overview"
-        description={`Per-cell voltage, balancing state and local probe temperatures for the selected module${
+        description={`Per-cell voltage, balancing state and local probe temperatures for ${rack.name} · ${selectedModule.name}${
           deviceId ? ` on device ${deviceId}` : ''
         }.`}
         actions={
           <ModuleSelector
-            modules={MODULES}
+            modules={modules}
             selectedModule={selectedModule}
             onSelect={setSelectedModule}
+            label={`Module · ${rack.name}`}
           />
         }
       />

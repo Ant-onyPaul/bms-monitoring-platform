@@ -6,8 +6,12 @@ import Navbar from './Navbar';
 /* -----------------------------------------------------------------------------
    DashboardLayout
 
-   The app shell. Content is keyed on pathname so each route mounts with a short
-   entrance — the transition marks that the view changed without delaying it.
+   The app shell. Deliberately has no background of its own: the ambient light
+   field painted on the document shows through, which is what gives the glass
+   chrome something to refract.
+
+   Content is keyed on pathname so each route mounts with a short entrance —
+   the transition marks that the view changed without delaying it.
    -------------------------------------------------------------------------- */
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -17,7 +21,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const toggleSidebar = () => setIsSidebarOpen((open) => !open);
 
   return (
-    <div className="flex h-screen bg-canvas text-ink overflow-hidden">
+    <div className="flex h-screen text-ink overflow-hidden">
       <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
       <div className="flex-1 flex flex-col min-w-0">
@@ -26,7 +30,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="flex-1 overflow-y-auto scrollbar-fine">
           <div
             key={location.pathname}
-            className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 py-6 lg:py-8 animate-fade-in"
+            className="mx-auto max-w-[1520px] px-4 sm:px-6 lg:px-8 xl:px-10 py-6 lg:py-9
+              animate-slide-up-fade"
           >
             {children}
           </div>

@@ -13,12 +13,14 @@ import React from 'react';
 
 export type PanelTone = 'default' | 'ok' | 'warn' | 'crit' | 'info';
 
+/* Grounds are opaque on every tone. A data panel is never glass — see the
+   glass policy at the top of index.css. */
 const TONES: Record<PanelTone, string> = {
   default: 'bg-surface border-line',
-  ok: 'bg-ok-surface border-ok-line',
-  warn: 'bg-warn-surface border-warn-line',
-  crit: 'bg-crit-surface border-crit-line',
-  info: 'bg-info-surface border-info-line',
+  ok: 'bg-ok-panel border-ok-line',
+  warn: 'bg-warn-panel border-warn-line',
+  crit: 'bg-crit-panel border-crit-line',
+  info: 'bg-info-panel border-info-line',
 };
 
 export interface PanelProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -41,12 +43,12 @@ export function Panel({
   return (
     <Tag
       className={`
-        relative border rounded-[10px] shadow-[var(--shadow-e1)]
+        relative border rounded-[13px] shadow-[var(--shadow-e1),var(--edge-lit)]
         ${TONES[tone]}
         ${flush ? '' : 'p-5'}
         ${
           interactive
-            ? 'transition-[border-color,box-shadow] duration-150 [transition-timing-function:var(--ease-precise)] hover:border-line-3 hover:shadow-[var(--shadow-e2)] cursor-pointer'
+            ? 'transition-[border-color,box-shadow,background-color] duration-200 [transition-timing-function:var(--ease-precise)] hover:border-line-2 hover:shadow-[var(--shadow-e2),var(--edge-lit)] cursor-pointer'
             : ''
         }
         ${className}
@@ -86,7 +88,7 @@ export function PanelHeader({
   return (
     <div
       className={`flex items-center justify-between gap-4 ${
-        divided ? 'pb-3 mb-4 border-b border-line' : 'mb-4'
+        divided ? 'pb-3.5 mb-4 border-b border-line' : 'mb-4'
       } ${className}`}
     >
       <div className="flex items-center gap-2 min-w-0">

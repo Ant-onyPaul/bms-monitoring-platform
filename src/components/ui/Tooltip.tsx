@@ -3,9 +3,10 @@ import React, { useRef, useState } from 'react';
 /* -----------------------------------------------------------------------------
    Tooltip
 
-   Dark chip on light UI so it separates from every surface beneath it. Opens on
-   hover *and* focus, with a short intent delay so sweeping the cursor across a
-   52-cell grid doesn't strobe tooltips.
+   On a dark ground the tooltip cannot be "the dark chip" — it lifts instead,
+   as a bright-edged glass chip that sits clearly above the surface beneath it.
+   Opens on hover *and* focus, with a short intent delay so sweeping the cursor
+   across a 52-cell grid doesn't strobe tooltips.
    -------------------------------------------------------------------------- */
 
 export interface TooltipProps {
@@ -56,9 +57,9 @@ export default function Tooltip({
           role="tooltip"
           className={`
             absolute ${SIDES[side]} z-[80] pointer-events-none
-            px-2 py-1.5 rounded-md
-            bg-ink text-white text-[11.5px] font-medium leading-tight
-            whitespace-nowrap shadow-[var(--shadow-e3)] animate-pop-in
+            px-2.5 py-1.5 rounded-[8px] glass-menu
+            text-ink text-[11.5px] font-medium leading-tight
+            whitespace-nowrap animate-pop-in
           `}
         >
           {content}

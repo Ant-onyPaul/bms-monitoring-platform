@@ -3,27 +3,42 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
-  Line,
-  LineChart,
-  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 import { compressTimeSeries } from '../../utils/timeSeries';
+import { buildSeries, getSystemTelemetry } from '../../data/bmsTelemetry';
+import ChartCard from '../ChartCard';
 import { Panel, PanelHeader } from '../ui/Panel';
 import { Readout } from '../ui/Metric';
 import { Badge } from '../ui/Badge';
 import PageHeader from '../PageHeader';
-import { axisProps, gridProps, ChartTooltip, Y_AXIS_WIDTH, CHART_MARGIN, niceDomain } from '../ui/chartTheme';
 import {
-  IconHistory,
-  IconCharge,
-  IconVoltage,
-  IconTemperature,
-  IconClock,
-} from '../icons';
+  axisProps,
+  gridProps,
+  ChartTooltip,
+  Y_AXIS_WIDTH,
+  CHART_MARGIN,
+  niceDomain,
+  chartColors,
+} from '../ui/chartTheme';
+import { IconCharge, IconCurrent, IconTemperature, IconClock } from '../icons';
+
+/* =============================================================================
+   BmsHistory
+
+   Two kinds of history, drawn differently because they are stored differently.
+
+   The platform writes state of charge as *intervals* — a value is recorded once
+   and held until it moves past the write threshold — so it is drawn as a step
+   line, the honest shape for held values. Current and temperature are sampled
+   continuously and are drawn as curves.
+
+   Every chart carries its measure and unit beside the title and an explicit
+   axis caption underneath, so no chart depends on a hover to be readable.
+   ========================================================================== */
 
 const rawSampleData = [
   { timestamp: '2026-07-27T00:00:00Z', value: 78.2 },
@@ -44,43 +59,6 @@ const RANGES = [
 
 type RangeId = (typeof RANGES)[number]['id'];
 
-/**
- * Deterministic pseudo-random walk.
- *
- * Seeded so a given range always renders the same history — a chart that
- * reshuffles itself on every re-render is worse than useless for diagnosis.
- */
-function buildSeries(
-  points: number,
-  stepMinutes: number,
-  seed: number,
-  base: number,
-  amplitude: number,
-) {
-  let state = seed;
-  const next = () => {
-    state = (state * 1664525 + 1013904223) % 4294967296;
-    return state / 4294967296;
-  };
-
-  const start = Date.UTC(2026, 6, 27, 0, 0, 0);
-  return Array.from({ length: points }, (_, index) => {
-    const t = index / (points - 1);
-    const cycle = Math.sin(t * Math.PI * 2 - Math.PI / 2);
-    const noise = (next() - 0.5) * amplitude * 0.35;
-    const time = new Date(start + index * stepMinutes * 60_000);
-
-    return {
-      t: time.getTime(),
-      label:
-        stepMinutes >= 1440
-          ? time.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
-          : time.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-      value: Number((base + cycle * amplitude + noise).toFixed(2)),
-    };
-  });
-}
-
 const formatClock = (iso: string) =>
   new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
@@ -88,31 +66,22 @@ interface BmsHistoryProps {
   deviceId?: string;
 }
 
-/* =============================================================================
-   BmsHistory
-
-   The platform stores telemetry as intervals rather than samples: a value is
-   written once and held until it changes meaningfully. That storage model is
-   the subject of this view, so the charge history is drawn as a step line —
-   the honest shape for held values — while voltage and thermal history, which
-   are continuously sampled, are drawn as curves.
-   ========================================================================== */
-
 export function BmsHistory({ deviceId }: BmsHistoryProps) {
+  const key = deviceId || 'default';
   const [range, setRange] = useState<RangeId>('24h');
   const activeRange = RANGES.find((r) => r.id === range)!;
 
+  const telemetry = useMemo(() => getSystemTelemetry(key), [key]);
+  const rack1 = telemetry.racks[0];
+  const rack2 = telemetry.racks[1];
+
+  /* ---------------------------------------------- Interval-stored SOC */
   const compressedSeries = compressTimeSeries(rawSampleData, { threshold: 0.3 });
+  const compressionRatio = Math.round((1 - compressedSeries.length / rawSampleData.length) * 100);
 
-  const compressionRatio = Math.round(
-    (1 - compressedSeries.length / rawSampleData.length) * 100,
-  );
-
-  /* The stored intervals, shaped for a step chart.
-     A step series draws each value forward to the *next* x, so the final
-     interval — the open one — would otherwise render as a detached dot with no
-     segment. Repeating its value at "now" gives the last step somewhere to run,
-     which is also what the open interval actually means. */
+  /* A step series draws each value forward to the next x, so the final open
+     interval would otherwise be a detached dot. Repeating its value at "now"
+     gives the last step somewhere to run — which is what "open" means. */
   const storedChartData = useMemo(() => {
     const points = compressedSeries.map((segment: any) => ({
       label: formatClock(segment.startTime),
@@ -123,18 +92,70 @@ export function BmsHistory({ deviceId }: BmsHistoryProps) {
     return points;
   }, [compressedSeries]);
 
-  const voltageSeries = useMemo(
-    () => buildSeries(activeRange.points, activeRange.stepMinutes, 7331, 52.6, 0.9),
-    [activeRange],
-  );
-  const thermalSeries = useMemo(
-    () => buildSeries(activeRange.points, activeRange.stepMinutes, 991, 34, 6),
-    [activeRange],
+  const socValues = compressedSeries.map((s: any) => s.value);
+
+  /* ---------------------------------------------- Continuous series
+     Rack currents are signed: positive = discharge, negative = charge. Rack 2
+     is on charge, so the pair exercises both directions and the zero line
+     carries real meaning. */
+  const opts = { points: activeRange.points, stepMinutes: activeRange.stepMinutes };
+
+  const systemCurrent = useMemo(
+    () =>
+      buildSeries(`${key}:sys-current:${range}`, {
+        ...opts,
+        base: telemetry.batteryCurrent,
+        amplitude: 26,
+        decimals: 1,
+      }),
+    [key, range, telemetry.batteryCurrent],
   );
 
-  const socValues = compressedSeries.map((s: any) => s.value);
-  const socHigh = Math.max(...socValues);
-  const socLow = Math.min(...socValues);
+  const rack1Current = useMemo(
+    () =>
+      buildSeries(`${key}:r1-current:${range}`, {
+        ...opts,
+        base: rack1.current,
+        amplitude: 14,
+        decimals: 1,
+      }),
+    [key, range, rack1.current],
+  );
+
+  const rack2Current = useMemo(
+    () =>
+      buildSeries(`${key}:r2-current:${range}`, {
+        ...opts,
+        base: rack2.current,
+        amplitude: 12,
+        phase: Math.PI,
+        decimals: 1,
+      }),
+    [key, range, rack2.current],
+  );
+
+  const rack1MaxTemp = useMemo(
+    () =>
+      buildSeries(`${key}:r1-maxtemp:${range}`, {
+        ...opts,
+        base: rack1.extremes.maxTemperature.value - 2.5,
+        amplitude: 4,
+        decimals: 1,
+      }),
+    [key, range, rack1.extremes.maxTemperature.value],
+  );
+
+  const rack2MaxTemp = useMemo(
+    () =>
+      buildSeries(`${key}:r2-maxtemp:${range}`, {
+        ...opts,
+        base: rack2.extremes.maxTemperature.value - 2.5,
+        amplitude: 3.4,
+        phase: Math.PI / 3,
+        decimals: 1,
+      }),
+    [key, range, rack2.extremes.maxTemperature.value],
+  );
 
   return (
     <div>
@@ -147,13 +168,13 @@ export function BmsHistory({ deviceId }: BmsHistoryProps) {
         actions={<RangeToggle value={range} onChange={setRange} />}
       />
 
-      {/* ------------------------------------------------ Charge history */}
+      {/* ---------------------------------------------- Stored SOC intervals */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-5">
         <Panel className="lg:col-span-8">
           <PanelHeader
             title="State of charge · stored intervals"
             icon={IconCharge}
-            meta="in %"
+            meta="SOC (%)"
             actions={
               <Badge tone="ok" size="xs">
                 {compressedSeries.length} intervals
@@ -165,13 +186,13 @@ export function BmsHistory({ deviceId }: BmsHistoryProps) {
             data — they are periods where the reading did not move enough to warrant a write.
           </p>
 
-          <div className="h-[260px]">
+          <div className="h-[240px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={storedChartData} margin={CHART_MARGIN}>
                 <defs>
                   <linearGradient id="soc-history" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10B981" stopOpacity={0.18} />
-                    <stop offset="100%" stopColor="#10B981" stopOpacity={0} />
+                    <stop offset="0%" stopColor={chartColors.ok} stopOpacity={0.18} />
+                    <stop offset="100%" stopColor={chartColors.ok} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid {...gridProps} />
@@ -179,7 +200,7 @@ export function BmsHistory({ deviceId }: BmsHistoryProps) {
                 <YAxis
                   {...axisProps}
                   width={Y_AXIS_WIDTH}
-                  domain={niceDomain(socLow, socHigh)}
+                  domain={niceDomain(Math.min(...socValues), Math.max(...socValues))}
                   tickCount={5}
                 />
                 <Tooltip
@@ -190,19 +211,24 @@ export function BmsHistory({ deviceId }: BmsHistoryProps) {
                   type="stepAfter"
                   dataKey="value"
                   name="State of charge"
-                  stroke="#10B981"
+                  stroke={chartColors.ok}
                   strokeWidth={1.75}
                   fill="url(#soc-history)"
-                  dot={{ r: 2.5, fill: '#10B981', strokeWidth: 0 }}
-                  activeDot={{ r: 4, fill: '#10B981', stroke: 'var(--color-surface)', strokeWidth: 2 }}
+                  dot={{ r: 2.5, fill: chartColors.ok, strokeWidth: 0 }}
+                  activeDot={{
+                    r: 4,
+                    fill: chartColors.ok,
+                    stroke: 'var(--color-surface)',
+                    strokeWidth: 2,
+                  }}
                   animationDuration={700}
                 />
               </AreaChart>
             </ResponsiveContainer>
           </div>
+          <p className="mt-2 text-center label-technical !text-[9.5px] text-ink-4">Time</p>
         </Panel>
 
-        {/* Storage economics */}
         <Panel flush className="lg:col-span-4 overflow-hidden flex flex-col">
           <div className="px-5 pt-4">
             <PanelHeader title="Interval storage" icon={IconClock} divided />
@@ -236,7 +262,12 @@ export function BmsHistory({ deviceId }: BmsHistoryProps) {
                     {segment.endTime ? formatClock(segment.endTime) : 'now'}
                   </span>
                 </span>
-                <Badge tone={segment.endTime ? 'neutral' : 'ok'} size="xs" dot live={!segment.endTime}>
+                <Badge
+                  tone={segment.endTime ? 'neutral' : 'ok'}
+                  size="xs"
+                  dot
+                  live={!segment.endTime}
+                >
                   {segment.endTime ? 'Closed' : 'Open'}
                 </Badge>
               </li>
@@ -250,25 +281,81 @@ export function BmsHistory({ deviceId }: BmsHistoryProps) {
         </Panel>
       </div>
 
-      {/* ------------------------------------------------ Continuous telemetry */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <TrendPanel
-          title="Pack voltage"
-          icon={IconVoltage}
-          unit="V"
-          color="#3B82F6"
-          data={voltageSeries}
-          caption={`Sampled continuously across the last ${activeRange.label.replace(' ', '')}.`}
+      {/* ---------------------------------------------- System current */}
+      <ChartCard
+        title="System current"
+        type="line"
+        data={systemCurrent.map((p) => p.value)}
+        labels={systemCurrent.map((p) => p.label)}
+        unit="Current (A)"
+        xLabel="Time"
+        color={chartColors.info}
+        zeroLine
+        caption="Total battery current across all racks. Positive values are discharge, negative are charge."
+        icon={IconCurrent}
+        height={200}
+        className="mb-5"
+      />
+
+      {/* ---------------------------------------------- Per-rack current */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+        <ChartCard
+          title="Rack 1 current"
+          type="line"
+          data={rack1Current.map((p) => p.value)}
+          labels={rack1Current.map((p) => p.label)}
+          unit="Current (A)"
+          xLabel="Time"
+          color={chartColors.info}
+          zeroLine
+          caption="Positive values indicate discharge."
+          icon={IconCurrent}
+          height={190}
         />
 
-        <TrendPanel
-          title="Pack temperature"
-          icon={IconTemperature}
-          unit="°C"
-          color="#F59E0B"
-          data={thermalSeries}
+        <ChartCard
+          title="Rack 2 current"
+          type="line"
+          data={rack2Current.map((p) => p.value)}
+          labels={rack2Current.map((p) => p.label)}
+          unit="Current (A)"
+          xLabel="Time"
+          color={chartColors.violet}
+          zeroLine
+          caption="Negative values indicate charge."
+          icon={IconCurrent}
+          height={190}
+        />
+      </div>
+
+      {/* ---------------------------------------------- Per-rack peak temperature */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <ChartCard
+          title="Rack 1 maximum temperature"
+          type="line"
+          data={rack1MaxTemp.map((p) => p.value)}
+          labels={rack1MaxTemp.map((p) => p.label)}
+          unit="Temperature (°C)"
+          xLabel="Time"
+          color={chartColors.warn}
           reference={{ value: 45, label: 'Limit' }}
-          caption="Peak probe across all modules, against the configured thermal limit."
+          caption="Hottest cell in Rack 1, against the configured thermal limit."
+          icon={IconTemperature}
+          height={190}
+        />
+
+        <ChartCard
+          title="Rack 2 maximum temperature"
+          type="line"
+          data={rack2MaxTemp.map((p) => p.value)}
+          labels={rack2MaxTemp.map((p) => p.label)}
+          unit="Temperature (°C)"
+          xLabel="Time"
+          color={chartColors.warn}
+          reference={{ value: 45, label: 'Limit' }}
+          caption="Hottest cell in Rack 2, against the configured thermal limit."
+          icon={IconTemperature}
+          height={190}
         />
       </div>
     </div>
@@ -276,11 +363,16 @@ export function BmsHistory({ deviceId }: BmsHistoryProps) {
 }
 
 /* -----------------------------------------------------------------------------
-   RangeToggle — a segmented control. The active segment is a filled chip so the
-   selected range is legible without relying on a subtle weight change.
+   RangeToggle — a segmented control driving every continuous chart on the page.
    -------------------------------------------------------------------------- */
 
-function RangeToggle({ value, onChange }: { value: RangeId; onChange: (id: RangeId) => void }) {
+function RangeToggle({
+  value,
+  onChange,
+}: {
+  value: RangeId;
+  onChange: (id: RangeId) => void;
+}) {
   return (
     <div
       role="group"
@@ -295,101 +387,16 @@ function RangeToggle({ value, onChange }: { value: RangeId; onChange: (id: Range
             type="button"
             aria-pressed={isActive}
             onClick={() => onChange(option.id)}
-            className={`
-              h-7 px-3 rounded-[5px] text-[12px] font-medium cursor-pointer
+            className={`h-7 px-3 rounded-[5px] text-[12px] font-medium cursor-pointer
               transition-[background-color,color,box-shadow] duration-150
               [transition-timing-function:var(--ease-precise)]
               focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand
-              ${
-                isActive
-                  ? 'bg-surface text-ink shadow-[var(--shadow-e1)]'
-                  : 'text-ink-3 hover:text-ink'
-              }
-            `}
+              ${isActive ? 'bg-surface text-ink shadow-[var(--shadow-e1)]' : 'text-ink-3 hover:text-ink'}`}
           >
             {option.label}
           </button>
         );
       })}
     </div>
-  );
-}
-
-function TrendPanel({
-  title,
-  icon,
-  unit,
-  color,
-  data,
-  caption,
-  reference,
-}: {
-  title: string;
-  icon: React.ComponentType<{ size?: number | string; className?: string }>;
-  unit: string;
-  color: string;
-  data: { label: string; value: number }[];
-  caption: string;
-  reference?: { value: number; label: string };
-}) {
-  const values = data.map((d) => d.value);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const mean = values.reduce((a, b) => a + b, 0) / values.length;
-
-  return (
-    <Panel>
-      <PanelHeader title={title} icon={icon} meta={`in ${unit}`} />
-      <p className="-mt-2 mb-4 text-[12px] text-ink-3 leading-relaxed">{caption}</p>
-
-      <div className="flex items-start gap-8 mb-4">
-        <Readout label="Min" value={min.toFixed(1)} unit={unit} size="sm" />
-        <Readout label="Mean" value={mean.toFixed(1)} unit={unit} size="sm" />
-        <Readout
-          label="Max"
-          value={max.toFixed(1)}
-          unit={unit}
-          size="sm"
-          tone={reference && max >= reference.value ? 'crit' : 'default'}
-        />
-      </div>
-
-      <div className="h-[180px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={CHART_MARGIN}>
-            <CartesianGrid {...gridProps} />
-            <XAxis dataKey="label" {...axisProps} minTickGap={28} />
-            <YAxis {...axisProps} width={Y_AXIS_WIDTH} domain={niceDomain(min, max)} tickCount={5} />
-            <Tooltip
-              content={<ChartTooltip unit={unit} />}
-              cursor={{ stroke: 'var(--color-line-2)', strokeWidth: 1 }}
-            />
-            {reference && (
-              <ReferenceLine
-                y={reference.value}
-                stroke="var(--color-crit)"
-                strokeDasharray="3 3"
-                label={{
-                  value: reference.label,
-                  position: 'insideTopRight',
-                  fill: 'var(--color-crit-ink)',
-                  fontSize: 10,
-                }}
-              />
-            )}
-            <Line
-              type="monotone"
-              dataKey="value"
-              name={title}
-              stroke={color}
-              strokeWidth={1.75}
-              dot={false}
-              activeDot={{ r: 3.5, fill: color, stroke: 'var(--color-surface)', strokeWidth: 2 }}
-              animationDuration={700}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    </Panel>
   );
 }

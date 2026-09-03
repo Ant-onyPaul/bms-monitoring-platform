@@ -70,7 +70,8 @@ export default function Sidebar({ isOpen, toggleSidebar }: any) {
       {/* Mobile scrim */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-[rgba(23,24,26,0.38)] lg:hidden animate-fade-in"
+          className="fixed inset-0 z-40 bg-[var(--scrim)] backdrop-blur-[3px]
+            lg:hidden animate-fade-in"
           onClick={toggleSidebar}
           aria-hidden="true"
         />
@@ -78,7 +79,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: any) {
 
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50 w-[252px] bg-surface border-r border-line
+          fixed inset-y-0 left-0 z-50 w-[258px] glass-chrome border-r border-line
           flex flex-col
           transform transition-transform duration-300 [transition-timing-function:var(--ease-precise)]
           lg:translate-x-0 lg:static lg:inset-auto lg:shrink-0
@@ -114,24 +115,34 @@ export default function Sidebar({ isOpen, toggleSidebar }: any) {
                 to={item.path}
                 onClick={() => isOpen && toggleSidebar()}
                 className={({ isActive }) => `
-                  relative flex items-center gap-3 h-9 px-3 rounded-md
-                  text-[13px] font-medium
-                  transition-colors duration-150 [transition-timing-function:var(--ease-precise)]
+                  relative flex items-center gap-3 h-10 px-3 rounded-[9px]
+                  text-[13px] font-medium overflow-hidden
+                  transition-[color,background-color,box-shadow] duration-200
+                  [transition-timing-function:var(--ease-precise)]
                   focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand
                   ${
                     isActive
-                      ? 'bg-surface-3 text-ink'
-                      : 'text-ink-3 hover:text-ink hover:bg-surface-2'
+                      ? 'text-ink bg-veil-2 shadow-[var(--edge-lit)] border border-line-2'
+                      : 'text-ink-3 border border-transparent hover:text-ink-2 hover:bg-veil-1'
                   }
                 `}
               >
                 {({ isActive }) => (
                   <>
                     {isActive && (
-                      <span
-                        aria-hidden="true"
-                        className="absolute left-0 top-1/2 -translate-y-1/2 w-[2.5px] h-4 rounded-r-full bg-brand"
-                      />
+                      <>
+                        <span
+                          aria-hidden="true"
+                          className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5
+                            rounded-r-full bg-brand shadow-[0_0_10px_rgba(16,185,129,0.55)]"
+                        />
+                        {/* A single pool of brand light bleeding in from the rail */}
+                        <span
+                          aria-hidden="true"
+                          className="absolute inset-y-0 left-0 w-24 pointer-events-none
+                            bg-[linear-gradient(to_right,rgba(16,185,129,0.10),transparent)]"
+                        />
+                      </>
                     )}
                     <Icon
                       size={16}
@@ -147,10 +158,10 @@ export default function Sidebar({ isOpen, toggleSidebar }: any) {
 
         {/* Identity & exit */}
         <div className="border-t border-line p-3 shrink-0">
-          <div className="flex items-center gap-2.5 px-2 py-2 mb-1">
+          <div className="flex items-center gap-2.5 px-2.5 py-2.5 mb-1 rounded-[10px] glass-control">
             <span
-              className="w-8 h-8 shrink-0 rounded-md bg-surface-3 border border-line
-                inline-flex items-center justify-center text-[11px] font-bold text-ink-2"
+              className="w-8 h-8 shrink-0 rounded-md bg-brand/15 border border-brand-line
+                inline-flex items-center justify-center text-[11px] font-bold text-brand-ink"
             >
               {initials}
             </span>
@@ -167,9 +178,9 @@ export default function Sidebar({ isOpen, toggleSidebar }: any) {
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 h-9 px-3 rounded-md text-[13px] font-medium
+            className="w-full flex items-center gap-3 h-10 px-3 rounded-[9px] text-[13px] font-medium
               text-ink-3 hover:text-crit-ink hover:bg-crit-surface cursor-pointer
-              transition-colors duration-150
+              transition-colors duration-200
               focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
           >
             <IconLogout size={16} className="shrink-0" />

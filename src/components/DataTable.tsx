@@ -80,7 +80,8 @@ export default function DataTable<T>({
   };
 
   return (
-    <div className="bg-surface border border-line rounded-[10px] shadow-[var(--shadow-e1)] overflow-hidden">
+    <div className="bg-surface border border-line rounded-[13px]
+      shadow-[var(--shadow-e1),var(--edge-lit)] overflow-hidden">
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 border-b border-line">
         <div className="relative flex-1 min-w-0 max-w-sm">
@@ -94,11 +95,11 @@ export default function DataTable<T>({
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder={searchPlaceholder}
             aria-label={searchPlaceholder}
-            className="w-full h-9 pl-9 pr-9 rounded-md bg-surface-2 border border-line
+            className="w-full h-9 pl-9 pr-9 rounded-[9px] bg-veil-1 border border-line
               text-[13px] text-ink placeholder:text-ink-4
-              transition-[border-color,box-shadow,background-color] duration-150
-              hover:border-line-2
-              focus:outline-none focus:bg-surface focus:border-brand
+              transition-[border-color,box-shadow,background-color] duration-200
+              hover:border-line-2 hover:bg-veil-2
+              focus:outline-none focus:bg-veil-3 focus:border-brand
               focus:shadow-[0_0_0_3px_var(--color-brand-surface)]"
           />
           {searchTerm && (
@@ -107,7 +108,7 @@ export default function DataTable<T>({
               onClick={() => setSearchTerm('')}
               aria-label="Clear search"
               className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 inline-flex items-center
-                justify-center rounded text-ink-4 hover:text-ink hover:bg-surface-3
+                justify-center rounded-[6px] text-ink-4 hover:text-ink hover:bg-veil-3
                 cursor-pointer transition-colors"
             >
               <IconClose size={13} />
@@ -131,7 +132,7 @@ export default function DataTable<T>({
       <div className="overflow-x-auto scrollbar-fine">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-surface-2 border-b border-line">
+            <tr className="bg-veil-1 border-b border-line">
               {columns.map((column, index) => {
                 const sortable = typeof column.accessor !== 'function';
                 const key = String(column.accessor);
@@ -202,7 +203,7 @@ export default function DataTable<T>({
                     transition-colors duration-100
                     ${
                       onRowClick
-                        ? 'cursor-pointer hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand'
+                        ? 'cursor-pointer hover:bg-veil-1 focus-visible:bg-veil-1 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand'
                         : ''
                     }
                   `}

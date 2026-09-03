@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
 import StatusBadge from '../../components/StatusBadge';
@@ -6,14 +6,16 @@ import Tabs from '../../components/ui/Tabs';
 import { LiveDot } from '../../components/ui/Badge';
 import { Device, DeviceCurrentData } from '../../types/database.types';
 import { useDeviceRealtime } from '../../hooks/useDeviceRealtime';
+import { getSystemTelemetry } from '../../data/bmsTelemetry';
+import { OperatingStateBadge } from '../../components/bms/OperatingState';
+import { FaultBanner } from '../../components/bms/FaultBanner';
+import DeviceLocation from '../../components/bms/DeviceLocation';
 import {
   IconArrowLeft,
   IconDevice,
-  IconLocation,
   IconRack,
-  IconCharge,
+  IconPack,
   IconTrend,
-  IconModule,
   IconCellGrid,
   IconHistory,
   IconWarning,
@@ -21,34 +23,44 @@ import {
 
 // BMS Components
 import { BmsOverview } from '../../components/bms/BmsOverview';
-import { ModuleOverview } from '../../components/bms/ModuleOverview';
+import { RackOverview } from '../../components/bms/RackOverview';
 import { CellOverview } from '../../components/bms/CellOverview';
 import { BmsHistory } from '../../components/bms/BmsHistory';
 import { BmsAlerts } from '../../components/bms/BmsAlerts';
 
-type Tab = 'overview' | 'modules' | 'cells' | 'history' | 'alerts';
+type Tab = 'overview' | 'racks' | 'cells' | 'history' | 'alerts';
 
-/* =============================================================================
-   DeviceDetails — the BMS workspace
-
-   The header is the workspace's fixed frame of reference: which unit is open,
-   whether it is reporting, and its headline condition. It stays identical
-   across all five tabs so switching views never costs the reader their place.
-   ========================================================================== */
-
-const WORKSPACE_TABS: {
+type WorkspaceTab = {
   id: Tab;
   label: string;
   icon: React.ComponentType<{ size?: number | string; className?: string }>;
   count?: number;
   tone?: 'default' | 'warn' | 'crit';
-}[] = [
+};
+
+/* =============================================================================
+   DeviceDetails — the BMS workspace
+
+   The header is the workspace's fixed frame of reference: which unit this is,
+   where it is, whether it is reporting, what it is doing right now, and its
+   headline condition. It stays identical across tabs so switching views never
+   costs the reader their place.
+
+   Navigation follows the hardware hierarchy — device → rack → module → cell.
+   Cell Overview is not a primary destination: the company marked it as future
+   use, so it is kept out of the tab bar and reached only by drilling into a
+   module from Rack Overview. The route and the component are untouched.
+   ========================================================================== */
+
+/** Cells is deliberately absent — see the note above. */
+const PRIMARY_TABS: WorkspaceTab[] = [
   { id: 'overview', label: 'Overview', icon: IconTrend },
-  { id: 'modules', label: 'Modules', icon: IconModule },
-  { id: 'cells', label: 'Cells', icon: IconCellGrid },
+  { id: 'racks', label: 'Racks', icon: IconRack },
   { id: 'history', label: 'History', icon: IconHistory },
-  { id: 'alerts', label: 'Alerts', icon: IconWarning, count: 2, tone: 'crit' },
+  { id: 'alerts', label: 'Alerts', icon: IconWarning },
 ];
+
+const CELLS_TAB: WorkspaceTab = { id: 'cells', label: 'Cells', icon: IconCellGrid };
 
 export default function DeviceDetails() {
   const { id } = useParams();
@@ -79,13 +91,36 @@ export default function DeviceDetails() {
     updated_at: new Date().toISOString(),
   };
 
-  useDeviceRealtime(device.id, initialCurrentData);
+  /* The realtime subscription is preserved. Its payload drives the link
+     freshness indicator; the pack figures come from the telemetry model so that
+     system and rack numbers stay consistent with each other. */
+  const { data: liveData } = useDeviceRealtime(device.id, initialCurrentData);
+
+  const telemetry = useMemo(() => getSystemTelemetry(device.id), [device.id]);
+
+  const activeFaults = useMemo(
+    () => telemetry.racks.filter((rack) => rack.fault).length,
+    [telemetry],
+  );
+
+  /* Cells joins the tab bar only while it is the active view, so drilling in
+     from a module still shows the user where they are. */
+  const tabs = useMemo<WorkspaceTab[]>(() => {
+    const alerts: WorkspaceTab = {
+      ...PRIMARY_TABS[3],
+      count: activeFaults,
+      tone: telemetry.fault?.severity === 'fault' ? 'crit' : 'warn',
+    };
+    const base = [PRIMARY_TABS[0], PRIMARY_TABS[1], PRIMARY_TABS[2], alerts];
+    if (activeTab === 'cells') base.splice(2, 0, CELLS_TAB);
+    return base;
+  }, [activeTab, activeFaults, telemetry.fault]);
 
   return (
     <DashboardLayout>
       <div>
         {/* ------------------------------------------------ Device context */}
-        <header className="mb-6">
+        <header className="mb-5">
           <button
             type="button"
             onClick={() => navigate(-1)}
@@ -107,35 +142,71 @@ export default function DeviceDetails() {
                   {device.name}
                 </h1>
                 <StatusBadge lastSeenAt={device.last_seen_at} status={device.status} />
+                <OperatingStateBadge state={telemetry.state} />
               </div>
 
-              {/* Identity rail */}
-              <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-4">
+              {/* Location is given its own line at body scale rather than being
+                  one entry in a metadata rail — an operator needs to know which
+                  site they are looking at before anything else. It is also the
+                  entry point to the (pending) geofencing map. */}
+              <div className="mt-2.5">
+                <DeviceLocation
+                  location={device.location}
+                  deviceName={device.name}
+                  deviceIdentifier={device.device_identifier}
+                  variant="header"
+                />
+              </div>
+
+              <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-3.5">
                 <MetaItem icon={IconDevice} label="Identifier" value={device.device_identifier} />
-                <MetaItem icon={IconLocation} label="Location" value={device.location ?? '—'} />
-                <MetaItem icon={IconRack} label="Type" value={device.device_type ?? '—'} />
-                <MetaItem icon={IconCharge} label="Configuration" value="4 racks · 48 modules" />
+                <MetaItem icon={IconPack} label="Type" value={device.device_type ?? '—'} />
+                <MetaItem
+                  icon={IconRack}
+                  label="Configuration"
+                  value={`${telemetry.racks.length} racks · ${telemetry.racks.reduce(
+                    (n, r) => n + r.modules.length,
+                    0,
+                  )} modules`}
+                />
               </dl>
             </div>
 
-            {/* Headline condition */}
-            <div className="flex items-stretch shrink-0 rounded-[10px] border border-line bg-surface shadow-[var(--shadow-e1)] overflow-hidden">
-              <SummaryCell label="State of charge" value="82" unit="%" />
-              <SummaryCell label="Health" value="97" unit="%" />
-              <div className="px-4 py-3 flex flex-col justify-center gap-1.5 min-w-[110px]">
+            {/* Headline condition.
+                A grid rather than a row: at 390px four cells cannot sit side by
+                side, and clipping the last one would hide the link state. The
+                gap-px over a line-coloured ground draws the dividers, so the
+                rule stays correct however the grid wraps. */}
+            <div
+              className="shrink-0 rounded-[10px] border border-line bg-line shadow-[var(--shadow-e1)]
+                overflow-hidden grid grid-cols-2 sm:grid-cols-4 gap-px"
+            >
+              <SummaryCell label="State of charge" value={telemetry.soc.toFixed(1)} unit="%" />
+              <SummaryCell label="State of health" value={telemetry.soh.toFixed(1)} unit="%" />
+              <SummaryCell
+                label="Battery voltage"
+                value={telemetry.batteryVoltage.toFixed(1)}
+                unit="V"
+              />
+              <div className="bg-surface px-4 py-3 flex flex-col justify-center gap-1.5 min-w-[110px]">
                 <span className="label-technical">Telemetry</span>
                 <span className="flex items-center gap-2">
-                  <LiveDot tone="ok" size={6} live />
-                  <span className="text-[12.5px] font-medium text-ink">Streaming</span>
+                  <LiveDot tone={liveData ? 'ok' : 'idle'} size={6} live={Boolean(liveData)} />
+                  <span className="text-[12.5px] font-medium text-ink">
+                    {liveData ? 'Streaming' : 'No link'}
+                  </span>
                 </span>
               </div>
             </div>
           </div>
         </header>
 
+        {/* ------------------------------------------------ Active fault */}
+        <FaultBanner fault={telemetry.fault} className="mb-5" />
+
         {/* ------------------------------------------------ Workspace tabs */}
         <Tabs
-          tabs={WORKSPACE_TABS}
+          tabs={tabs}
           active={activeTab}
           onChange={(id) => setActiveTab(id as Tab)}
           className="mb-6"
@@ -143,9 +214,9 @@ export default function DeviceDetails() {
 
         {/* ------------------------------------------------ Selected view */}
         <div key={activeTab} className="animate-fade-in">
-          {activeTab === 'overview' && <BmsOverview deviceId={device.id} />}
-          {activeTab === 'modules' && (
-            <ModuleOverview
+          {activeTab === 'overview' && <BmsOverview deviceId={device.id} device={device} />}
+          {activeTab === 'racks' && (
+            <RackOverview
               deviceId={device.id}
               onModuleSelect={(moduleId) => {
                 setSelectedModuleId(moduleId);
@@ -184,7 +255,7 @@ function MetaItem({
 
 function SummaryCell({ label, value, unit }: { label: string; value: string; unit: string }) {
   return (
-    <div className="px-4 py-3 border-r border-line flex flex-col justify-center gap-1.5 min-w-[104px]">
+    <div className="bg-surface px-4 py-3 flex flex-col justify-center gap-1.5 min-w-[104px]">
       <span className="label-technical">{label}</span>
       <span className="flex items-baseline gap-0.5">
         <span className="data-technical text-[19px] font-medium text-ink leading-none">{value}</span>

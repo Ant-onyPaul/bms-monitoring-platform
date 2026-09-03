@@ -8,13 +8,16 @@ import React from 'react';
    labels — a chart that cannot be read off is decoration, and we do not ship it.
    -------------------------------------------------------------------------- */
 
+/* Series colours resolve from theme tokens rather than literals, so a chart
+   re-themes with the rest of the app and no component has to know which theme
+   is active. Recharts resolves var() in its presentation attributes. */
 export const chartColors = {
-  ok: '#10B981',
-  warn: '#F59E0B',
-  crit: '#EF4444',
-  info: '#3B82F6',
-  ink: '#43464B',
-  violet: '#8B5CF6',
+  ok: 'var(--color-chart-ok)',
+  warn: 'var(--color-chart-warn)',
+  crit: 'var(--color-chart-crit)',
+  info: 'var(--color-chart-info)',
+  ink: 'var(--color-chart-ink)',
+  violet: 'var(--color-chart-violet)',
 };
 
 export const axisProps = {
@@ -29,7 +32,7 @@ export const axisProps = {
 export const Y_AXIS_WIDTH = 52;
 
 /** Left chart margin that pairs with Y_AXIS_WIDTH without stranding whitespace. */
-export const CHART_MARGIN = { top: 4, right: 8, left: -14, bottom: 0 } as const;
+export const CHART_MARGIN = { top: 6, right: 16, left: -14, bottom: 0 } as const;
 
 export const gridProps = {
   stroke: 'var(--color-line)',
@@ -68,6 +71,23 @@ export function niceDomain(min: number, max: number): [number, number] {
 }
 
 /**
+ * Domain plus the exact ticks that go with it.
+ *
+ * Passing Recharts a domain alone lets it re-derive its own ticks, which can
+ * land on uneven spacing (35 / 38 / 41 / 45). Supplying both keeps the gaps
+ * equal, which is the whole point of a linear axis.
+ */
+export function niceAxis(min: number, max: number): { domain: [number, number]; ticks: number[] } {
+  const domain = niceDomain(min, max);
+  const step = niceStep((domain[1] - domain[0]) / 4);
+  const ticks: number[] = [];
+  for (let v = domain[0]; v <= domain[1] + step / 1000; v += step) {
+    ticks.push(Number(v.toFixed(6)));
+  }
+  return { domain, ticks };
+}
+
+/**
  * Bar charts get a zero baseline.
  *
  * Bar length encodes magnitude, so truncating the axis exaggerates differences
@@ -90,7 +110,7 @@ export function ChartTooltip({
   if (!active || !payload?.length) return null;
 
   return (
-    <div className="bg-surface border border-line-2 rounded-md shadow-[var(--shadow-e3)] px-3 py-2 min-w-[128px]">
+    <div className="glass-menu rounded-[10px] px-3 py-2.5 min-w-[136px]">
       <p className="label-technical mb-1.5">
         {labelFormatter ? labelFormatter(label) : label}
       </p>
@@ -126,7 +146,7 @@ export function LegendSwatches({
       {items.map((item) => (
         <span key={item.label} className="inline-flex items-center gap-1.5">
           <span
-            className="w-2.5 h-2.5 rounded-[3px] shrink-0 border border-black/5"
+            className="w-2.5 h-2.5 rounded-[3px] shrink-0 border border-white/10"
             style={{ backgroundColor: item.color }}
           />
           <span className="text-[11px] text-ink-3 font-medium">{item.label}</span>

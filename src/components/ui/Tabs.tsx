@@ -99,11 +99,11 @@ export default function Tabs<T extends string>({
               tabIndex={isActive ? 0 : -1}
               onClick={() => onChange(tab.id)}
               className={`
-                relative shrink-0 h-11 px-3.5 inline-flex items-center gap-2
+                relative shrink-0 h-12 px-4 inline-flex items-center gap-2
                 text-[13px] font-medium whitespace-nowrap cursor-pointer
-                transition-colors duration-150 [transition-timing-function:var(--ease-precise)]
+                transition-colors duration-200 [transition-timing-function:var(--ease-precise)]
                 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand
-                ${isActive ? 'text-ink' : 'text-ink-3 hover:text-ink'}
+                ${isActive ? 'text-ink' : 'text-ink-3 hover:text-ink-2'}
               `}
             >
               {Icon && (
@@ -124,7 +124,7 @@ export default function Tabs<T extends string>({
                         ? 'bg-crit-surface text-crit-ink border-crit-line'
                         : tab.tone === 'warn'
                           ? 'bg-warn-surface text-warn-ink border-warn-line'
-                          : 'bg-surface-3 text-ink-3 border-line'
+                          : 'bg-veil-2 text-ink-3 border-line'
                     }
                   `}
                 >
@@ -138,7 +138,8 @@ export default function Tabs<T extends string>({
         {/* Sliding active rail */}
         <span
           aria-hidden="true"
-          className="absolute bottom-0 h-[2px] bg-brand-ink rounded-full"
+          className="absolute bottom-0 h-[2px] rounded-full bg-brand
+            shadow-[0_0_12px_rgba(16,185,129,0.65)]"
           style={{
             left: indicator.left,
             width: indicator.width,

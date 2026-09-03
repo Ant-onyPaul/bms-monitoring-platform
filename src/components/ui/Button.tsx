@@ -22,29 +22,26 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   fullWidth?: boolean;
 }
 
+/* The two filled variants resolve their gradient, border and shadow from theme
+   tokens (see .btn-primary-fill in index.css): a lit green with near-black text
+   on dark, the deep green with white text on light. Secondary is glass so it
+   reads as chrome rather than as data. */
 const VARIANTS: Record<Variant, string> = {
-  primary:
-    'bg-brand-ink text-white border border-brand-ink ' +
-    'hover:bg-brand-deep hover:border-brand-deep ' +
-    'active:bg-brand-deep ' +
-    'shadow-[0_1px_2px_rgba(4,120,87,0.24)] hover:shadow-[0_2px_6px_-1px_rgba(4,120,87,0.32)]',
+  primary: 'btn-primary-fill border hover:brightness-[1.06] active:brightness-95',
   secondary:
-    'bg-surface text-ink border border-line-2 ' +
-    'hover:bg-surface-2 hover:border-line-3 ' +
-    'active:bg-surface-3 shadow-[0_1px_1px_rgba(23,24,26,0.03)]',
+    'glass-control text-ink ' +
+    'hover:bg-veil-3 hover:border-line-2 ' +
+    'active:bg-veil-2 shadow-[var(--edge-lit)]',
   ghost:
-    'bg-transparent text-ink-2 border border-transparent ' +
-    'hover:bg-surface-3 hover:text-ink active:bg-canvas-2',
-  danger:
-    'bg-crit-ink text-white border border-crit-ink ' +
-    'hover:bg-[#991B1B] hover:border-[#991B1B] ' +
-    'shadow-[0_1px_2px_rgba(185,28,28,0.24)]',
+    'bg-transparent text-ink-3 border border-transparent ' +
+    'hover:bg-veil-2 hover:text-ink active:bg-veil-1',
+  danger: 'btn-danger-fill border hover:brightness-[1.06] active:brightness-95',
 };
 
 const SIZES: Record<Size, string> = {
-  sm: 'h-8 px-3 text-[12.5px] gap-1.5 rounded-[5px]',
-  md: 'h-[38px] px-4 text-[13px] gap-2 rounded-md',
-  lg: 'h-11 px-5 text-[14px] gap-2 rounded-md',
+  sm: 'h-8 px-3 text-[12.5px] gap-1.5 rounded-[7px]',
+  md: 'h-[38px] px-4 text-[13px] gap-2 rounded-[9px]',
+  lg: 'h-11 px-5 text-[14px] gap-2 rounded-[10px]',
 };
 
 const ICON_SIZE: Record<Size, number> = { sm: 14, md: 15, lg: 16 };
@@ -73,7 +70,7 @@ export default function Button({
       className={`
         relative inline-flex items-center justify-center font-medium
         whitespace-nowrap select-none cursor-pointer
-        transition-[background-color,border-color,box-shadow,transform] duration-150
+        transition-[background-color,border-color,box-shadow,transform,filter] duration-200
         [transition-timing-function:var(--ease-precise)]
         active:translate-y-px
         focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand

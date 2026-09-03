@@ -1,59 +1,60 @@
 import { useMemo } from 'react';
 import StatusCard from '../StatusCard';
-import GaugeCard from '../GaugeCard';
 import TemperatureCard from '../TemperatureCard';
 import ProtectionCard from '../ProtectionCard';
 import ChartCard from '../ChartCard';
 import AlertCard, { AlertItem } from '../AlertCard';
-import QuickActionCard from '../QuickActionCard';
 import { Panel, PanelHeader } from '../ui/Panel';
-import { Readout, Meter } from '../ui/Metric';
+import { Readout } from '../ui/Metric';
 import Sparkline from '../ui/Sparkline';
 import { Badge } from '../ui/Badge';
+import { OperatingStatePanel } from './OperatingState';
+import SystemInformation from './SystemInformation';
+import { buildDailyEnergy, buildSeries, getSystemTelemetry } from '../../data/bmsTelemetry';
+import { OPERATING_STATE, operatingStateLabel } from '../../types/bms.types';
+import { chartColors } from '../ui/chartTheme';
+import { Device } from '../../types/database.types';
 import {
   IconVoltage,
   IconCurrent,
   IconPower,
   IconHealth,
-  IconCycle,
-  IconImbalance,
   IconTrend,
-  IconBars,
   IconCharge,
+  IconEnergy,
+  IconTemperature,
 } from '../icons';
 
 /* =============================================================================
-   BmsOverview
+   BmsOverview — system level
 
-   Answers, in reading order: is the pack alright → what is it doing right now →
-   how is charge and health trending → is the spread healthy → what is protecting
-   it → what changed recently.
+   Reading order matches the operator's questions: is it healthy and what is it
+   doing → what are the battery's live figures → how is charge and health
+   trending → what is protecting it → what changed recently.
 
-   The layout is intentionally uneven. A row of six identical tiles would imply
-   six equally important facts; here the status panel and the live telemetry
-   block dominate, spread and protection sit at half weight, and history and
-   alerts anchor the bottom.
+   Everything here is system-scope. Rack, module and cell detail lives one level
+   down in Rack Overview, which keeps the hierarchy legible:
+   device → rack → module → cell.
    ========================================================================== */
 
-// Mock Data
 const alertsData: AlertItem[] = [
   {
     type: 'warning',
-    message: 'Module 3 Temperature High',
+    message: 'Module Over Temperature',
     time: '2 minutes ago',
     source: 'Rack 1 · Module 03',
     code: 'OT-1140',
     detail:
-      'NTC 4 reported 38.5 °C, 3.5 °C above the module mean. Airflow at the rack inlet should be checked before the next charge cycle.',
+      'A module probe exceeded its warning threshold. Airflow at the rack inlet should be checked before the next charge cycle.',
   },
   {
     type: 'fault',
-    message: 'Cell 12 Voltage Low',
+    message: 'Module Communication Loss',
     time: '15 minutes ago',
-    source: 'Rack 1 · Module 01 · Cell 12',
-    code: 'UV-2101',
+    source: 'Rack 3 · Module 11',
+    code: 'LINK-4004',
     detail:
-      'Cell held 3,420 mV under load, 280 mV below the module mean. Balancing has been requested; if the spread persists across two cycles the cell should be flagged for replacement.',
+      'No CAN frames received from the module within the timeout window. The gateway is reachable, so the fault is most likely on the rack CAN segment.',
   },
   {
     type: 'info',
@@ -65,54 +66,128 @@ const alertsData: AlertItem[] = [
   },
 ];
 
-const cellVoltageData = [40, 45, 42, 60, 80, 50, 45, 42, 55, 65, 50, 40, 42, 45, 60, 45];
-const tempTrendData = [30, 32, 35, 38, 40, 42, 41, 39, 38, 37, 35, 33];
-const socTrendData = [90, 88, 85, 82, 80, 78, 75, 74, 82, 85, 88, 92];
-
-/** Short trailing windows shown beside the live values. */
-const TRENDS = {
-  voltage: [52.4, 52.5, 52.6, 52.7, 52.6, 52.8, 52.9, 52.8],
-  current: [16.2, 17.1, 17.8, 18.4, 18.9, 18.7, 18.5, 18.6],
-  power: [0.86, 0.9, 0.94, 0.97, 1.0, 0.99, 0.97, 0.98],
-  soh: [98, 98, 97, 97, 97, 97, 97, 97],
-};
-
-/** Twelve two-hourly marks, so the 24 h charts carry real time labels. */
-const HOURS = Array.from({ length: 12 }, (_, i) => `${String((i * 2) % 24).padStart(2, '0')}:00`);
-const CELL_LABELS = Array.from({ length: 16 }, (_, i) => `C${String(i + 1).padStart(2, '0')}`);
-
 interface BmsOverviewProps {
   deviceId?: string;
+  /** Identity record, used by the System information panel. */
+  device?: Device;
 }
 
-export function BmsOverview({ deviceId }: BmsOverviewProps) {
-  const cellStats = useMemo(() => {
-    const highest = 3760;
-    const lowest = 3420;
-    const mean = 3698;
-    return { highest, lowest, mean, delta: highest - lowest };
-  }, []);
+export function BmsOverview({ deviceId, device }: BmsOverviewProps) {
+  const key = deviceId || 'default';
+  const telemetry = useMemo(() => getSystemTelemetry(key), [key]);
+
+  /* Trend windows. Seeded per device so a chart is stable across tab switches. */
+  const socSeries = useMemo(
+    () =>
+      buildSeries(`${key}:soc`, {
+        points: 24,
+        stepMinutes: 60,
+        base: telemetry.soc,
+        amplitude: 7,
+        phase: -Math.PI / 2,
+        decimals: 1,
+        clamp: [0, 100],
+      }),
+    [key, telemetry.soc],
+  );
+
+  const maxTempSeries = useMemo(
+    () =>
+      buildSeries(`${key}:max-cell-temp`, {
+        points: 24,
+        stepMinutes: 60,
+        base: telemetry.maxCellTemperature - 3,
+        amplitude: 4.5,
+        decimals: 1,
+      }),
+    [key, telemetry.maxCellTemperature],
+  );
+
+  const dailyEnergy = useMemo(() => buildDailyEnergy(key, 14), [key]);
+
+  /* Short trailing windows shown beside the live values. */
+  const microTrends = useMemo(
+    () => ({
+      voltage: buildSeries(`${key}:v-micro`, {
+        points: 8,
+        stepMinutes: 5,
+        base: telemetry.batteryVoltage,
+        amplitude: 1.6,
+        decimals: 1,
+      }).map((p) => p.value),
+      current: buildSeries(`${key}:i-micro`, {
+        points: 8,
+        stepMinutes: 5,
+        base: Math.abs(telemetry.batteryCurrent),
+        amplitude: 6,
+        decimals: 1,
+      }).map((p) => p.value),
+      power: buildSeries(`${key}:p-micro`, {
+        points: 8,
+        stepMinutes: 5,
+        base: Math.abs(telemetry.batteryPower),
+        amplitude: 4,
+        decimals: 2,
+      }).map((p) => p.value),
+      soc: socSeries.slice(-8).map((p) => p.value),
+    }),
+    [key, telemetry, socSeries],
+  );
+
+  const isCharging = telemetry.state === OPERATING_STATE.CHARGE;
+  const netEnergy = telemetry.dailyChargedKwh - telemetry.dailyDischargedKwh;
+  const roundTrip =
+    telemetry.dailyChargedKwh > 0
+      ? (telemetry.dailyDischargedKwh / telemetry.dailyChargedKwh) * 100
+      : 0;
+
+  const health = telemetry.fault
+    ? telemetry.fault.severity === 'fault'
+      ? 'Fault'
+      : 'Warning'
+    : 'Normal';
 
   return (
     <div className="space-y-5">
-      {/* ---------------------------------------------- State & live telemetry */}
+      {/* ---------------------------------------------- Status & battery telemetry */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         <StatusCard
-          status="Normal"
-          mode="Discharging"
-          detail="48 of 48 modules reporting. One cell is under review for voltage spread."
+          status={health}
+          detail={
+            telemetry.fault
+              ? `${telemetry.fault.name} on ${telemetry.fault.source}.`
+              : 'All racks reporting within configured limits.'
+          }
           facts={[
             { label: 'Uptime', value: '42d 06h' },
             { label: 'Last frame', value: '0.4s ago' },
             { label: 'Firmware', value: 'v2.14.3' },
-            { label: 'Device', value: deviceId || 'BMS-101' },
+            { label: 'Cycles', value: telemetry.cycleCount },
           ]}
+          className="lg:col-span-3"
+        >
+          {/* Operating state gets its own weight — it is the first thing asked */}
+          <div className="pt-4 border-t border-black/[0.06]">
+            <OperatingStatePanel
+              state={telemetry.state}
+              current={telemetry.batteryCurrent}
+              power={telemetry.batteryPower}
+            />
+          </div>
+        </StatusCard>
+
+        {/* The dominant metric on the page. Everything else is context for it. */}
+        <SocHero
+          soc={telemetry.soc}
+          storedKwh={telemetry.batteryEnergyKwh}
+          ratedKwh={telemetry.ratedEnergyKwh}
+          reserve={20}
           className="lg:col-span-4"
         />
 
-        <Panel className="lg:col-span-8">
+        <Panel className="lg:col-span-5">
           <PanelHeader
-            title="Live telemetry"
+            title="Battery telemetry"
             icon={IconTrend}
             meta="1s interval"
             actions={
@@ -123,165 +198,249 @@ export function BmsOverview({ deviceId }: BmsOverviewProps) {
             divided
           />
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-5">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-5">
             <LiveMetric
-              label="Pack voltage"
-              value="52.8"
+              label="Battery voltage"
+              value={telemetry.batteryVoltage.toFixed(1)}
               unit="V"
               icon={IconVoltage}
-              trend={TRENDS.voltage}
+              trend={microTrends.voltage}
               tone="ok"
             />
             <LiveMetric
-              label="Pack current"
-              value="18.6"
+              label="Battery current"
+              value={Math.abs(telemetry.batteryCurrent).toFixed(1)}
               unit="A"
               icon={IconCurrent}
-              trend={TRENDS.current}
-              tone="info"
-              hint="Discharge"
+              trend={microTrends.current}
+              tone={isCharging ? 'info' : 'default'}
+              hint={operatingStateLabel(telemetry.state)}
             />
             <LiveMetric
-              label="Power output"
-              value="0.98"
+              label="Battery power"
+              value={Math.abs(telemetry.batteryPower).toFixed(2)}
               unit="kW"
               icon={IconPower}
-              trend={TRENDS.power}
+              trend={microTrends.power}
+              tone="info"
+            />
+            <LiveMetric
+              label="Battery energy"
+              value={telemetry.batteryEnergyKwh.toFixed(1)}
+              unit="kWh"
+              icon={IconEnergy}
+              hint={`of ${telemetry.ratedEnergyKwh.toLocaleString()} kWh rated`}
+            />
+            <LiveMetric
+              label="State of charge"
+              value={telemetry.soc.toFixed(1)}
+              unit="%"
+              icon={IconCharge}
+              trend={microTrends.soc}
               tone="ok"
             />
             <LiveMetric
               label="State of health"
-              value="97"
+              value={telemetry.soh.toFixed(1)}
               unit="%"
               icon={IconHealth}
-              trend={TRENDS.soh}
-              tone="ok"
-            />
-            <LiveMetric label="Cycle count" value="412" icon={IconCycle} hint="of 6,000 rated" />
-            <LiveMetric
-              label="Cell spread"
-              value={cellStats.delta}
-              unit="mV"
-              icon={IconImbalance}
-              tone="warn"
-              hint="Threshold 250 mV"
+              hint={`${telemetry.cycleCount} cycles`}
             />
           </div>
         </Panel>
       </div>
 
-      {/* ---------------------------------------------- Charge, thermal, spread */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <GaugeCard
-          title="State of charge"
-          percentage={82}
-          tone="brand"
-          threshold={20}
-          icon={IconCharge}
-          caption={
-            <span>
-              <span className="data-technical text-ink-2">7.4 kWh</span> usable · reserve at 20%
-            </span>
-          }
-        />
-
-        <GaugeCard
-          title="State of health"
-          percentage={97}
-          tone="ok"
-          icon={IconHealth}
-          caption={
-            <span>
-              <span className="data-technical text-ink-2">412</span> cycles · 3% capacity fade
-            </span>
-          }
-        />
-
-        <TemperatureCard
-          max={42}
-          min={28}
-          avg={33.4}
-          hottestSource="Rack 1 · Module 03"
-          range={[10, 60]}
-        />
-
-        <CellSpreadPanel {...cellStats} />
-      </div>
-
-      {/* ---------------------------------------------- Protection & history */}
+      {/* ---------------------------------------------- Thermal · energy · protection */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        <ProtectionCard
-          state="Connected"
-          insulation={842}
-          protections={[
-            { label: 'Over-voltage', state: 'armed' },
-            { label: 'Under-voltage', state: 'armed' },
-            { label: 'Over-temp', state: 'armed' },
-            { label: 'Over-current', state: 'armed' },
-            { label: 'Short circuit', state: 'armed' },
-            { label: 'Isolation', state: 'armed' },
-          ]}
+        <TemperatureCard
+          max={telemetry.maxCellTemperature}
+          min={telemetry.minCellTemperature}
+          avg={Number(
+            ((telemetry.maxCellTemperature + telemetry.minCellTemperature) / 2).toFixed(1),
+          )}
+          hottestSource={hottestSource(telemetry)}
+          range={[10, 60]}
           className="lg:col-span-4"
         />
 
-        <ChartCard
-          title="State of charge"
-          type="line"
-          data={socTrendData}
-          labels={HOURS}
-          unit="%"
-          color="#10B981"
-          domain={[60, 100]}
-          reference={{ value: 20, label: 'Reserve' }}
-          caption="Last 24 hours. A single deep discharge overnight, recovered on the morning charge window."
-          icon={IconTrend}
-          height={200}
-          className="lg:col-span-8"
+        <DailyEnergyPanel
+          charged={telemetry.dailyChargedKwh}
+          discharged={telemetry.dailyDischargedKwh}
+          net={netEnergy}
+          roundTrip={roundTrip}
+          className="lg:col-span-4"
+        />
+
+        <ProtectionCard
+          state={telemetry.racks.some((r) => r.contactorClosed) ? 'Connected' : 'Disconnected'}
+          insulation={842}
+          className="lg:col-span-4"
         />
       </div>
 
-      {/* ---------------------------------------------- Distribution */}
+      {/* ---------------------------------------------- SOC over time */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         <ChartCard
-          title="Cell voltage distribution"
-          type="bar"
-          data={cellVoltageData}
-          labels={CELL_LABELS}
-          unit="mV above 3,650"
-          color="#10B981"
-          caption="Deviation of each cell from the pack floor. Amber bars sit more than one standard deviation from the mean."
-          icon={IconBars}
-          height={210}
+          title="State of charge"
+          type="line"
+          data={socSeries.map((p) => p.value)}
+          labels={socSeries.map((p) => p.label)}
+          unit="SOC (%)"
+          xLabel="Time"
+          color={chartColors.ok}
+          reference={{ value: 20, label: 'Reserve' }}
+          caption="System state of charge across the last 24 hours."
+          icon={IconCharge}
+          height={230}
           className="lg:col-span-7"
         />
 
         <ChartCard
-          title="Temperature trend"
+          title="Max cell temperature trend"
           type="line"
-          data={tempTrendData}
-          labels={HOURS}
-          unit="°C"
-          color="#F59E0B"
+          data={maxTempSeries.map((p) => p.value)}
+          labels={maxTempSeries.map((p) => p.label)}
+          unit="Temperature (°C)"
+          xLabel="Time"
+          color={chartColors.warn}
           reference={{ value: 45, label: 'Limit' }}
-          caption="Peak probe across the pack. The mid-afternoon rise tracks the discharge window."
-          height={210}
+          caption="Hottest cell anywhere in the system, against the configured thermal limit."
+          icon={IconTemperature}
+          height={230}
           className="lg:col-span-5"
         />
       </div>
 
-      {/* ---------------------------------------------- Events & actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        <AlertCard alerts={alertsData} className="lg:col-span-8" />
-        <QuickActionCard className="lg:col-span-4" />
-      </div>
+      {/* ---------------------------------------------- Daily energy */}
+      <ChartCard
+        title="Daily charged & discharged energy"
+        type="bar"
+        series={[
+          {
+            key: 'charged',
+            name: 'Charged',
+            color: chartColors.info,
+            data: dailyEnergy.map((d) => d.chargedKwh),
+          },
+          {
+            key: 'discharged',
+            name: 'Discharged',
+            color: chartColors.ok,
+            data: dailyEnergy.map((d) => d.dischargedKwh),
+          },
+        ]}
+        labels={dailyEnergy.map((d) => d.label)}
+        unit="Energy (kWh)"
+        xLabel="Date"
+        caption="Energy into and out of the battery per day over the last fortnight. The gap between the pair is round-trip loss."
+        icon={IconEnergy}
+        height={230}
+      />
 
+      {/* ---------------------------------------------- Events */}
+      <AlertCard alerts={alertsData} />
+
+      {/* ---------------------------------------------- Installation reference */}
+      {device && <SystemInformation device={device} telemetry={telemetry} />}
     </div>
   );
 }
 
+/** Names the rack and module holding the hottest cell in the system. */
+function hottestSource(telemetry: ReturnType<typeof getSystemTelemetry>) {
+  let best = telemetry.racks[0];
+  telemetry.racks.forEach((rack) => {
+    if (rack.extremes.maxTemperature.value > best.extremes.maxTemperature.value) best = rack;
+  });
+  const reading = best.extremes.maxTemperature;
+  return `${best.name} · Module ${String(reading.module).padStart(2, '0')}`;
+}
+
 /* -----------------------------------------------------------------------------
-   LiveMetric — a value with its recent trajectory, used only inside the
-   telemetry panel where six of them share one surface.
+   SocHero
+
+   State of charge is the one number an operator reads from across the room, so
+   it is given the weight of a headline rather than a tile among tiles. The arc
+   gauges it replaced said the same thing at a fifth of the legibility.
+
+   The value carries its own context: stored energy against usable capacity, and
+   a track showing where the charge sits relative to the reserve floor.
+   -------------------------------------------------------------------------- */
+
+function SocHero({
+  soc,
+  storedKwh,
+  ratedKwh,
+  reserve,
+  className = '',
+}: {
+  soc: number;
+  storedKwh: number;
+  ratedKwh: number;
+  reserve: number;
+  className?: string;
+}) {
+  const tone = soc < reserve ? 'crit' : soc < reserve + 10 ? 'warn' : 'ok';
+  const fill =
+    tone === 'crit'
+      ? 'from-crit/70 to-crit'
+      : tone === 'warn'
+        ? 'from-warn/70 to-warn'
+        : 'from-brand/60 to-brand';
+
+  return (
+    <Panel className={`flex flex-col ${className}`}>
+      <PanelHeader
+        title="State of charge"
+        icon={IconCharge}
+        actions={
+          <Badge tone={tone === 'ok' ? 'ok' : tone} size="xs">
+            {soc >= reserve ? 'Above reserve' : 'Below reserve'}
+          </Badge>
+        }
+      />
+
+      <div className="flex items-baseline gap-2 animate-rise-in">
+        <span className="metric-display text-[68px] sm:text-[76px]">{soc.toFixed(1)}</span>
+        <span className="text-[22px] font-medium text-ink-3 leading-none">%</span>
+      </div>
+
+      <p className="mt-3.5 text-[13px] text-ink-3 leading-relaxed">
+        <span className="data-technical text-ink-2">{storedKwh.toFixed(1)} kWh</span> stored of{' '}
+        <span className="data-technical text-ink-2">{ratedKwh.toLocaleString()} kWh</span> usable
+      </p>
+
+      {/* Charge track. The reserve floor is marked so the number is read
+          against the limit that actually matters operationally. */}
+      <div className="mt-auto pt-6">
+        <div className="relative h-2 rounded-full bg-veil-2 overflow-hidden">
+          <span
+            className={`absolute inset-y-0 left-0 rounded-full bg-gradient-to-r ${fill}`}
+            style={{
+              width: `${Math.min(100, Math.max(0, soc))}%`,
+              transition: 'width 820ms var(--ease-out-soft)',
+            }}
+          />
+        </div>
+        <div className="relative h-0">
+          <span
+            aria-hidden="true"
+            className="absolute -top-[13px] w-px h-3.5 bg-ink-4"
+            style={{ left: `${reserve}%` }}
+          />
+        </div>
+        <div className="flex justify-between mt-2.5">
+          <span className="label-technical">0%</span>
+          <span className="label-technical">reserve {reserve}%</span>
+          <span className="label-technical">100%</span>
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
+/* -----------------------------------------------------------------------------
+   LiveMetric — a value with its recent trajectory.
    -------------------------------------------------------------------------- */
 
 function LiveMetric({
@@ -320,66 +479,77 @@ function LiveMetric({
 }
 
 /* -----------------------------------------------------------------------------
-   CellSpreadPanel
+   DailyEnergyPanel
 
-   Voltage spread is the single most predictive pack-health signal, so it gets
-   its own panel rather than living as one number in a strip. The band shows
-   min → max against the full cell operating window with the mean marked.
+   Today's throughput. Net and round-trip efficiency are shown alongside the two
+   raw counters because they are what an operator judges the day by — a pair of
+   bare totals invites mental arithmetic.
    -------------------------------------------------------------------------- */
 
-function CellSpreadPanel({
-  highest,
-  lowest,
-  mean,
-  delta,
+function DailyEnergyPanel({
+  charged,
+  discharged,
+  net,
+  roundTrip,
+  className = '',
 }: {
-  highest: number;
-  lowest: number;
-  mean: number;
-  delta: number;
+  charged: number;
+  discharged: number;
+  net: number;
+  roundTrip: number;
+  className?: string;
 }) {
-  const floor = 3200;
-  const ceiling = 3900;
-  const tone = delta > 250 ? 'warn' : 'ok';
+  const total = charged + discharged || 1;
 
   return (
-    <Panel className="flex flex-col">
+    <Panel className={`flex flex-col justify-between ${className}`}>
       <PanelHeader
-        title="Cell spread"
-        icon={IconImbalance}
+        title="Energy today"
+        icon={IconEnergy}
         actions={
-          <Badge tone={tone} size="xs">
-            Δ{delta} mV
+          <Badge tone={net >= 0 ? 'info' : 'ok'} size="xs">
+            {net >= 0 ? '+' : ''}
+            {net.toFixed(1)} kWh
           </Badge>
         }
       />
 
-      <div className="flex items-start justify-between gap-3 mb-5">
-        <Readout label="High" value={highest} unit="mV" tone="ok" />
-        <Readout label="Mean" value={mean} unit="mV" />
-        <Readout label="Low" value={lowest} unit="mV" tone={tone} align="right" />
-      </div>
-
-      <div className="mt-auto">
-        <Meter
-          value={highest}
-          from={lowest}
-          min={floor}
-          max={ceiling}
-          tone={tone}
-          height={6}
-          label="Cell voltage spread"
+      <div className="flex items-start justify-between gap-3">
+        <Readout label="Charged" value={charged.toFixed(1)} unit="kWh" tone="info" />
+        <Readout
+          label="Discharged"
+          value={discharged.toFixed(1)}
+          unit="kWh"
+          tone="ok"
+          align="right"
         />
-        <div className="flex justify-between mt-2.5">
-          <span className="data-technical text-[10px] text-ink-4">{floor} mV</span>
-          <span className="label-technical">Cell window</span>
-          <span className="data-technical text-[10px] text-ink-4">{ceiling} mV</span>
-        </div>
       </div>
 
-      <p className="mt-3 pt-3 border-t border-line text-[11.5px] text-ink-3">
-        Widest cell at <span className="data-technical text-ink-2">Module 01 · Cell 12</span>
-      </p>
+      {/* Proportional split of the day's throughput */}
+      <div className="flex h-2.5 rounded-full overflow-hidden bg-veil-2 mt-4 mb-2.5">
+        <span
+          className="bg-info"
+          style={{
+            width: `${(charged / total) * 100}%`,
+            transition: 'width 620ms var(--ease-precise)',
+          }}
+        />
+        <span
+          className="bg-ok"
+          style={{
+            width: `${(discharged / total) * 100}%`,
+            transition: 'width 620ms var(--ease-precise)',
+          }}
+        />
+      </div>
+
+      <div className="flex items-center justify-between pt-4 mt-4 border-t border-line">
+        <span className="label-technical">Round trip</span>
+        <span className="data-technical text-[13px] font-medium text-ink">
+          {roundTrip.toFixed(1)}
+          <span className="text-[11px] text-ink-4 ml-0.5">%</span>
+        </span>
+      </div>
     </Panel>
   );
 }

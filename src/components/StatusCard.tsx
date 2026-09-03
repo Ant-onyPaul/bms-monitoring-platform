@@ -11,6 +11,8 @@ export interface StatusCardProps {
   detail?: string;
   /** Small facts rendered along the bottom edge. */
   facts?: { label: string; value: React.ReactNode }[];
+  /** Rendered between the headline and the facts, e.g. the operating state. */
+  children?: React.ReactNode;
   className?: string;
 }
 
@@ -53,6 +55,7 @@ export default function StatusCard({
   mode,
   detail,
   facts,
+  children,
   className = '',
 }: StatusCardProps) {
   const key = status.toLowerCase() as keyof typeof CONFIG;
@@ -81,6 +84,8 @@ export default function StatusCard({
           </p>
         </div>
       </div>
+
+      {children && <div className="mt-5">{children}</div>}
 
       {facts && facts.length > 0 && (
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3 mt-5 pt-4 border-t border-black/[0.06]">

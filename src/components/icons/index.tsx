@@ -578,3 +578,21 @@ export const IconEnergy = (p: IconProps) => (
     <path d="M12.7 7.1 9.3 12.3h2.9l-.6 4.6 3.5-5.4h-2.9l.5-4.4Z" />
   </Svg>
 );
+
+/* --- Theme ------------------------------------------------------------------
+   Drawn to the same 24-grid and stroke weight as the rest of the set so the
+   toggle does not read as a borrowed icon.
+   -------------------------------------------------------------------------- */
+
+export const IconSun = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="4.2" />
+    <path d="M12 2.4v2.4M12 19.2v2.4M4.22 4.22l1.7 1.7M18.08 18.08l1.7 1.7M2.4 12h2.4M19.2 12h2.4M4.22 19.78l1.7-1.7M18.08 5.92l1.7-1.7" />
+  </Svg>
+);
+
+export const IconMoon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M20.4 14.3A8.6 8.6 0 0 1 9.7 3.6a8.8 8.8 0 1 0 10.7 10.7Z" />
+  </Svg>
+);

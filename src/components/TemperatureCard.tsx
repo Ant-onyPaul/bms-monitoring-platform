@@ -39,14 +39,14 @@ export default function TemperatureCard({
   const tone = max >= 45 ? 'crit' : max >= 35 ? 'warn' : 'default';
 
   return (
-    <Panel className={`flex flex-col ${className}`}>
+    <Panel className={`flex flex-col justify-between ${className}`}>
       <PanelHeader
         title="Thermal"
         icon={IconTemperature}
         meta={`Δ${delta.toFixed(1)}°C`}
       />
 
-      <div className="flex items-start justify-between gap-4 mb-5">
+      <div className="flex items-start justify-between gap-4">
         <Readout label="Peak" value={max.toFixed(1)} unit="°C" tone={tone} />
         {typeof avg === 'number' && (
           <Readout label="Mean" value={avg.toFixed(1)} unit="°C" />
@@ -55,7 +55,7 @@ export default function TemperatureCard({
       </div>
 
       {/* Spread within the operating envelope */}
-      <div className="mt-auto">
+      <div className="pt-6">
         <div className="relative h-1.5 rounded-full bg-surface-3 overflow-hidden">
           <span
             aria-hidden="true"

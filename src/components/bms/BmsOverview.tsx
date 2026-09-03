@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import StatusCard from '../StatusCard';
-import GaugeCard from '../GaugeCard';
 import TemperatureCard from '../TemperatureCard';
 import ProtectionCard from '../ProtectionCard';
 import ChartCard from '../ChartCard';
@@ -165,7 +164,7 @@ export function BmsOverview({ deviceId, device }: BmsOverviewProps) {
             { label: 'Firmware', value: 'v2.14.3' },
             { label: 'Cycles', value: telemetry.cycleCount },
           ]}
-          className="lg:col-span-4"
+          className="lg:col-span-3"
         >
           {/* Operating state gets its own weight — it is the first thing asked */}
           <div className="pt-4 border-t border-black/[0.06]">
@@ -177,7 +176,16 @@ export function BmsOverview({ deviceId, device }: BmsOverviewProps) {
           </div>
         </StatusCard>
 
-        <Panel className="lg:col-span-8">
+        {/* The dominant metric on the page. Everything else is context for it. */}
+        <SocHero
+          soc={telemetry.soc}
+          storedKwh={telemetry.batteryEnergyKwh}
+          ratedKwh={telemetry.ratedEnergyKwh}
+          reserve={20}
+          className="lg:col-span-4"
+        />
+
+        <Panel className="lg:col-span-5">
           <PanelHeader
             title="Battery telemetry"
             icon={IconTrend}
@@ -190,13 +198,14 @@ export function BmsOverview({ deviceId, device }: BmsOverviewProps) {
             divided
           />
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-5">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-5">
             <LiveMetric
               label="Battery voltage"
               value={telemetry.batteryVoltage.toFixed(1)}
               unit="V"
               icon={IconVoltage}
               trend={microTrends.voltage}
+              tone="ok"
             />
             <LiveMetric
               label="Battery current"
@@ -213,6 +222,7 @@ export function BmsOverview({ deviceId, device }: BmsOverviewProps) {
               unit="kW"
               icon={IconPower}
               trend={microTrends.power}
+              tone="info"
             />
             <LiveMetric
               label="Battery energy"
@@ -227,6 +237,7 @@ export function BmsOverview({ deviceId, device }: BmsOverviewProps) {
               unit="%"
               icon={IconCharge}
               trend={microTrends.soc}
+              tone="ok"
             />
             <LiveMetric
               label="State of health"
@@ -239,37 +250,8 @@ export function BmsOverview({ deviceId, device }: BmsOverviewProps) {
         </Panel>
       </div>
 
-      {/* ---------------------------------------------- Charge, health, thermal, energy */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <GaugeCard
-          title="State of charge"
-          percentage={telemetry.soc}
-          tone="brand"
-          threshold={20}
-          icon={IconCharge}
-          caption={
-            <span>
-              <span className="data-technical text-ink-2">
-                {telemetry.batteryEnergyKwh.toFixed(0)} kWh
-              </span>{' '}
-              stored · reserve at 20%
-            </span>
-          }
-        />
-
-        <GaugeCard
-          title="State of health"
-          percentage={telemetry.soh}
-          tone="ok"
-          icon={IconHealth}
-          caption={
-            <span>
-              <span className="data-technical text-ink-2">{telemetry.cycleCount}</span> cycles ·{' '}
-              {(100 - telemetry.soh).toFixed(1)}% capacity fade
-            </span>
-          }
-        />
-
+      {/* ---------------------------------------------- Thermal · energy · protection */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         <TemperatureCard
           max={telemetry.maxCellTemperature}
           min={telemetry.minCellTemperature}
@@ -278,6 +260,7 @@ export function BmsOverview({ deviceId, device }: BmsOverviewProps) {
           )}
           hottestSource={hottestSource(telemetry)}
           range={[10, 60]}
+          className="lg:col-span-4"
         />
 
         <DailyEnergyPanel
@@ -285,17 +268,18 @@ export function BmsOverview({ deviceId, device }: BmsOverviewProps) {
           discharged={telemetry.dailyDischargedKwh}
           net={netEnergy}
           roundTrip={roundTrip}
+          className="lg:col-span-4"
         />
-      </div>
 
-      {/* ---------------------------------------------- SOC over time */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         <ProtectionCard
           state={telemetry.racks.some((r) => r.contactorClosed) ? 'Connected' : 'Disconnected'}
           insulation={842}
           className="lg:col-span-4"
         />
+      </div>
 
+      {/* ---------------------------------------------- SOC over time */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         <ChartCard
           title="State of charge"
           type="line"
@@ -307,36 +291,7 @@ export function BmsOverview({ deviceId, device }: BmsOverviewProps) {
           reference={{ value: 20, label: 'Reserve' }}
           caption="System state of charge across the last 24 hours."
           icon={IconCharge}
-          height={210}
-          className="lg:col-span-8"
-        />
-      </div>
-
-      {/* ---------------------------------------------- Energy & thermal trends */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        <ChartCard
-          title="Daily charged & discharged energy"
-          type="bar"
-          series={[
-            {
-              key: 'charged',
-              name: 'Charged',
-              color: chartColors.info,
-              data: dailyEnergy.map((d) => d.chargedKwh),
-            },
-            {
-              key: 'discharged',
-              name: 'Discharged',
-              color: chartColors.ok,
-              data: dailyEnergy.map((d) => d.dischargedKwh),
-            },
-          ]}
-          labels={dailyEnergy.map((d) => d.label)}
-          unit="Energy (kWh)"
-          xLabel="Date"
-          caption="Energy into and out of the battery per day over the last fortnight. The gap between the pair is round-trip loss."
-          icon={IconEnergy}
-          height={210}
+          height={230}
           className="lg:col-span-7"
         />
 
@@ -351,10 +306,36 @@ export function BmsOverview({ deviceId, device }: BmsOverviewProps) {
           reference={{ value: 45, label: 'Limit' }}
           caption="Hottest cell anywhere in the system, against the configured thermal limit."
           icon={IconTemperature}
-          height={210}
+          height={230}
           className="lg:col-span-5"
         />
       </div>
+
+      {/* ---------------------------------------------- Daily energy */}
+      <ChartCard
+        title="Daily charged & discharged energy"
+        type="bar"
+        series={[
+          {
+            key: 'charged',
+            name: 'Charged',
+            color: chartColors.info,
+            data: dailyEnergy.map((d) => d.chargedKwh),
+          },
+          {
+            key: 'discharged',
+            name: 'Discharged',
+            color: chartColors.ok,
+            data: dailyEnergy.map((d) => d.dischargedKwh),
+          },
+        ]}
+        labels={dailyEnergy.map((d) => d.label)}
+        unit="Energy (kWh)"
+        xLabel="Date"
+        caption="Energy into and out of the battery per day over the last fortnight. The gap between the pair is round-trip loss."
+        icon={IconEnergy}
+        height={230}
+      />
 
       {/* ---------------------------------------------- Events */}
       <AlertCard alerts={alertsData} />
@@ -373,6 +354,89 @@ function hottestSource(telemetry: ReturnType<typeof getSystemTelemetry>) {
   });
   const reading = best.extremes.maxTemperature;
   return `${best.name} · Module ${String(reading.module).padStart(2, '0')}`;
+}
+
+/* -----------------------------------------------------------------------------
+   SocHero
+
+   State of charge is the one number an operator reads from across the room, so
+   it is given the weight of a headline rather than a tile among tiles. The arc
+   gauges it replaced said the same thing at a fifth of the legibility.
+
+   The value carries its own context: stored energy against usable capacity, and
+   a track showing where the charge sits relative to the reserve floor.
+   -------------------------------------------------------------------------- */
+
+function SocHero({
+  soc,
+  storedKwh,
+  ratedKwh,
+  reserve,
+  className = '',
+}: {
+  soc: number;
+  storedKwh: number;
+  ratedKwh: number;
+  reserve: number;
+  className?: string;
+}) {
+  const tone = soc < reserve ? 'crit' : soc < reserve + 10 ? 'warn' : 'ok';
+  const fill =
+    tone === 'crit'
+      ? 'from-crit/70 to-crit'
+      : tone === 'warn'
+        ? 'from-warn/70 to-warn'
+        : 'from-brand/60 to-brand';
+
+  return (
+    <Panel className={`flex flex-col ${className}`}>
+      <PanelHeader
+        title="State of charge"
+        icon={IconCharge}
+        actions={
+          <Badge tone={tone === 'ok' ? 'ok' : tone} size="xs">
+            {soc >= reserve ? 'Above reserve' : 'Below reserve'}
+          </Badge>
+        }
+      />
+
+      <div className="flex items-baseline gap-2 animate-rise-in">
+        <span className="metric-display text-[68px] sm:text-[76px]">{soc.toFixed(1)}</span>
+        <span className="text-[22px] font-medium text-ink-3 leading-none">%</span>
+      </div>
+
+      <p className="mt-3.5 text-[13px] text-ink-3 leading-relaxed">
+        <span className="data-technical text-ink-2">{storedKwh.toFixed(1)} kWh</span> stored of{' '}
+        <span className="data-technical text-ink-2">{ratedKwh.toLocaleString()} kWh</span> usable
+      </p>
+
+      {/* Charge track. The reserve floor is marked so the number is read
+          against the limit that actually matters operationally. */}
+      <div className="mt-auto pt-6">
+        <div className="relative h-2 rounded-full bg-veil-2 overflow-hidden">
+          <span
+            className={`absolute inset-y-0 left-0 rounded-full bg-gradient-to-r ${fill}`}
+            style={{
+              width: `${Math.min(100, Math.max(0, soc))}%`,
+              transition: 'width 820ms var(--ease-out-soft)',
+            }}
+          />
+        </div>
+        <div className="relative h-0">
+          <span
+            aria-hidden="true"
+            className="absolute -top-[13px] w-px h-3.5 bg-ink-4"
+            style={{ left: `${reserve}%` }}
+          />
+        </div>
+        <div className="flex justify-between mt-2.5">
+          <span className="label-technical">0%</span>
+          <span className="label-technical">reserve {reserve}%</span>
+          <span className="label-technical">100%</span>
+        </div>
+      </div>
+    </Panel>
+  );
 }
 
 /* -----------------------------------------------------------------------------
@@ -427,16 +491,18 @@ function DailyEnergyPanel({
   discharged,
   net,
   roundTrip,
+  className = '',
 }: {
   charged: number;
   discharged: number;
   net: number;
   roundTrip: number;
+  className?: string;
 }) {
   const total = charged + discharged || 1;
 
   return (
-    <Panel className="flex flex-col">
+    <Panel className={`flex flex-col justify-between ${className}`}>
       <PanelHeader
         title="Energy today"
         icon={IconEnergy}
@@ -448,7 +514,7 @@ function DailyEnergyPanel({
         }
       />
 
-      <div className="flex items-start justify-between gap-3 mb-4">
+      <div className="flex items-start justify-between gap-3">
         <Readout label="Charged" value={charged.toFixed(1)} unit="kWh" tone="info" />
         <Readout
           label="Discharged"
@@ -460,7 +526,7 @@ function DailyEnergyPanel({
       </div>
 
       {/* Proportional split of the day's throughput */}
-      <div className="flex h-2.5 rounded-full overflow-hidden bg-surface-3 mb-2.5">
+      <div className="flex h-2.5 rounded-full overflow-hidden bg-veil-2 mt-4 mb-2.5">
         <span
           className="bg-info"
           style={{
@@ -477,7 +543,7 @@ function DailyEnergyPanel({
         />
       </div>
 
-      <div className="flex items-center justify-between mt-auto pt-3 border-t border-line">
+      <div className="flex items-center justify-between pt-4 mt-4 border-t border-line">
         <span className="label-technical">Round trip</span>
         <span className="data-technical text-[13px] font-medium text-ink">
           {roundTrip.toFixed(1)}

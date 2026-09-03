@@ -152,8 +152,8 @@ export default function AdminDashboard() {
               <AreaChart data={AVAILABILITY} margin={CHART_MARGIN}>
                 <defs>
                   <linearGradient id="availability" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10B981" stopOpacity={0.16} />
-                    <stop offset="100%" stopColor="#10B981" stopOpacity={0} />
+                    <stop offset="0%" stopColor="var(--color-chart-ok)" stopOpacity={0.16} />
+                    <stop offset="100%" stopColor="var(--color-chart-ok)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid {...gridProps} />
@@ -167,11 +167,11 @@ export default function AdminDashboard() {
                   type="monotone"
                   dataKey="value"
                   name="Availability"
-                  stroke="#10B981"
+                  stroke="var(--color-chart-ok)"
                   strokeWidth={1.75}
                   fill="url(#availability)"
                   dot={false}
-                  activeDot={{ r: 3.5, fill: '#10B981', stroke: 'var(--color-surface)', strokeWidth: 2 }}
+                  activeDot={{ r: 3.5, fill: 'var(--color-chart-ok)', stroke: 'var(--color-surface)', strokeWidth: 2 }}
                   animationDuration={700}
                 />
               </AreaChart>

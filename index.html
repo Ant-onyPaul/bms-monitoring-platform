@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#F4F4F1" />
+    <meta name="theme-color" content="#0A0C0E" />
     <meta
       name="description"
       content="Shade Energy — battery management monitoring for industrial energy storage."
@@ -18,6 +18,22 @@
     />
 
     <title>Shade Energy — BMS Monitoring</title>
+
+    <!-- Applies the saved theme before the first paint so there is no flash of
+         the wrong theme. Dark is the default; the OS preference is not used. -->
+    <script>
+      (function () {
+        try {
+          var saved = window.localStorage.getItem('shade-energy-theme');
+          document.documentElement.setAttribute(
+            'data-theme',
+            saved === 'light' ? 'light' : 'dark'
+          );
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

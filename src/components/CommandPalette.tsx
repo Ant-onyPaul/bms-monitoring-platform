@@ -129,7 +129,7 @@ export default function CommandPalette({
   return (
     <div className="fixed inset-0 z-[110] flex items-start justify-center px-4 pt-[12vh]">
       <div
-        className="absolute inset-0 bg-[rgba(23,24,26,0.4)] animate-fade-in"
+        className="absolute inset-0 bg-[var(--scrim)] backdrop-blur-[6px] animate-fade-in"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -138,8 +138,8 @@ export default function CommandPalette({
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
-        className="relative w-full max-w-[540px] bg-surface border border-line-2 rounded-xl
-          shadow-[var(--shadow-e4)] overflow-hidden animate-modal-in"
+        className="relative w-full max-w-[580px] glass-modal rounded-[18px]
+          overflow-hidden animate-modal-in"
         onKeyDown={onKeyDown}
       >
         <div className="flex items-center gap-3 px-4 h-13 border-b border-line">
@@ -155,7 +155,7 @@ export default function CommandPalette({
           />
           <kbd
             className="shrink-0 data-technical text-[10px] text-ink-4 border border-line
-              rounded-[4px] px-1.5 py-1 bg-surface-2"
+              rounded-[5px] px-1.5 py-1 bg-veil-2"
           >
             ESC
           </kbd>
@@ -185,9 +185,9 @@ export default function CommandPalette({
                     data-index={index}
                     onMouseEnter={() => setActiveIndex(index)}
                     onClick={() => run(command)}
-                    className={`w-full mx-0 px-4 h-10 flex items-center gap-3 text-left cursor-pointer
+                    className={`w-full mx-0 px-4 h-11 flex items-center gap-3 text-left cursor-pointer
                       transition-colors duration-100
-                      ${active ? 'bg-surface-3' : ''}`}
+                      ${active ? 'bg-veil-3' : ''}`}
                   >
                     <Icon size={15} className={active ? 'text-brand-ink' : 'text-ink-4'} />
                     <span className="flex-1 min-w-0 text-[13.5px] font-medium text-ink truncate">
@@ -209,7 +209,7 @@ export default function CommandPalette({
           )}
         </div>
 
-        <div className="flex items-center gap-4 px-4 py-2.5 border-t border-line bg-surface-2">
+        <div className="flex items-center gap-4 px-4 py-2.5 border-t border-line bg-veil-1">
           <Hint keys={['↑', '↓']} label="Navigate" />
           <Hint keys={['↵']} label="Open" />
         </div>
@@ -224,8 +224,8 @@ function Hint({ keys, label }: { keys: string[]; label: string }) {
       {keys.map((k) => (
         <kbd
           key={k}
-          className="data-technical text-[10px] text-ink-3 border border-line rounded-[3px]
-            min-w-[18px] h-[18px] inline-flex items-center justify-center bg-surface px-1"
+          className="data-technical text-[10px] text-ink-3 border border-line rounded-[4px]
+            min-w-[18px] h-[18px] inline-flex items-center justify-center bg-veil-2 px-1"
         >
           {k}
         </kbd>

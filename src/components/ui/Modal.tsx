@@ -1,12 +1,13 @@
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { IconClose } from '../icons';
 
 /* -----------------------------------------------------------------------------
    Modal
 
-   Scrim is a solid ink wash rather than a blur: behind a dialog sits dense
-   telemetry, and blurring it produces smeared digits that read as a rendering
-   fault. Focus is trapped, Escape closes, and body scroll is locked while open.
+   The scrim darkens and lightly blurs the room behind the dialog; the dialog
+   itself is the deepest glass tier, so it reads as a lit pane floating above
+   the console. Focus is trapped, Escape closes, body scroll is locked.
    -------------------------------------------------------------------------- */
 
 const FOCUSABLE =
@@ -87,10 +88,19 @@ export default function Modal({
 
   if (!isOpen) return null;
 
-  return (
+  /* Rendered into <body>, not in place.
+
+     The route content in DashboardLayout carries an entrance animation with
+     `fill-mode: both`, so its final `translateY(0)` sticks around permanently —
+     and a non-`none` transform makes that element the containing block for any
+     `position: fixed` descendant. Left in the tree, this overlay would size and
+     centre itself against the full scroll height of the page rather than the
+     viewport, pushing tall dialogs off the bottom of the screen. A portal takes
+     the overlay out of that subtree so `fixed` means fixed. */
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
       <div
-        className="absolute inset-0 bg-[rgba(23,24,26,0.42)] animate-fade-in"
+        className="absolute inset-0 bg-[var(--scrim)] backdrop-blur-[6px] animate-fade-in"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -104,7 +114,7 @@ export default function Modal({
         tabIndex={-1}
         className={`
           relative w-full ${widthClass} max-h-[calc(100vh-3rem)]
-          bg-surface border border-line-2 rounded-xl shadow-[var(--shadow-e4)]
+          glass-modal rounded-[18px]
           flex flex-col overflow-hidden animate-modal-in outline-none
         `}
       >
@@ -123,8 +133,8 @@ export default function Modal({
             type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="shrink-0 -mr-1.5 -mt-0.5 w-8 h-8 inline-flex items-center justify-center rounded-md
-              text-ink-3 hover:text-ink hover:bg-surface-3 cursor-pointer
+            className="shrink-0 -mr-1.5 -mt-0.5 w-8 h-8 inline-flex items-center justify-center rounded-[8px]
+              text-ink-3 hover:text-ink hover:bg-veil-3 cursor-pointer
               transition-colors duration-150
               focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
           >
@@ -135,11 +145,12 @@ export default function Modal({
         <div className="flex-1 overflow-y-auto scrollbar-fine px-6 py-5">{children}</div>
 
         {footer && (
-          <footer className="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-line bg-surface-2">
+          <footer className="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-line bg-veil-1">
             {footer}
           </footer>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

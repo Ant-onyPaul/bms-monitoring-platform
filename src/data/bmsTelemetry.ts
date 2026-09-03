@@ -642,7 +642,7 @@ export const TELEMETRY_PROVENANCE: FieldProvenance[] = [
     label: 'Device coordinates / geofence',
     provenance: 'simulated',
     backingField: '— none —',
-    note: 'devices.location is a free-text place name. The map view needs latitude/longitude on the device record, a geofence boundary, and a configured map provider. No position is fabricated in the UI.',
+    note: 'devices.location is a free-text place name. The location map shows fixed DEMO coordinates from data/demoGeofence.ts, labelled as such wherever they appear, so the geofence interaction can be reviewed. Real siting needs latitude/longitude on the device record and a geofence boundary per device.',
   },
   {
     label: 'Historical trends (SOC, current, temperature, energy)',

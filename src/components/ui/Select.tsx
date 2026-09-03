@@ -7,10 +7,10 @@ import { IconChevronDown, IconCheck } from '../icons';
    Built as a real listbox: roving focus, Home/End, Escape, click-outside, and
    `aria-activedescendant` so screen readers track the highlighted option.
 
-   The menu is a fully opaque surface (never translucent) at z-index 60 with a
-   hairline border and lifted shadow, because it routinely opens over the dense
-   cell/module grids — any transparency would let voltage digits bleed through
-   the option text.
+   The menu is the *least* transparent glass tier in the system (93%) at
+   z-index 60, because it routinely opens over dense cell and module grids. The
+   blur is there for depth; the opacity is there so voltage digits never bleed
+   through an option label.
    -------------------------------------------------------------------------- */
 
 export interface SelectOption {
@@ -161,13 +161,13 @@ export default function Select<T extends SelectOption>({
         aria-controls={open ? listboxId : undefined}
         className={`
           ${widthClass} h-[38px] inline-flex items-center justify-between gap-2
-          px-3 rounded-md bg-surface border text-[13px] font-medium text-ink
+          px-3 rounded-[9px] glass-control text-[13px] font-medium text-ink
           cursor-pointer select-none
-          transition-[border-color,box-shadow,background-color] duration-150
+          transition-[border-color,box-shadow,background-color] duration-200
           [transition-timing-function:var(--ease-precise)]
-          hover:bg-surface-2
+          hover:bg-veil-3
           focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand
-          ${open ? 'border-line-3 shadow-[var(--shadow-e2)]' : 'border-line-2 shadow-[var(--shadow-e1)]'}
+          ${open ? '!border-line-3 bg-veil-3' : ''}
         `}
       >
         <span className="flex items-center gap-2 min-w-0">
@@ -191,9 +191,9 @@ export default function Select<T extends SelectOption>({
           aria-activedescendant={`${listboxId}-${activeIndex}`}
           onKeyDown={onListKeyDown}
           className={`
-            absolute z-[60] mt-1.5 ${widthClass} max-h-72 overflow-y-auto scrollbar-fine
-            bg-surface border border-line-2 rounded-md shadow-[var(--shadow-e3)]
-            py-1 outline-none animate-menu-in
+            absolute z-[60] mt-2 ${widthClass} max-h-72 overflow-y-auto scrollbar-fine
+            glass-menu rounded-[11px]
+            py-1.5 outline-none animate-menu-in
             ${align === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left'}
           `}
         >
@@ -210,10 +210,11 @@ export default function Select<T extends SelectOption>({
                 onMouseEnter={() => !option.disabled && setActiveIndex(index)}
                 onClick={() => commit(index)}
                 className={`
-                  mx-1 px-2.5 h-8 flex items-center justify-between gap-3 rounded-[5px]
+                  mx-1.5 px-2.5 h-[34px] flex items-center justify-between gap-3 rounded-[7px]
                   text-[13px] cursor-pointer select-none
+                  transition-colors duration-100
                   ${option.disabled ? 'opacity-40 cursor-not-allowed' : ''}
-                  ${active && !option.disabled ? 'bg-surface-3' : ''}
+                  ${active && !option.disabled ? 'bg-veil-3' : ''}
                   ${selected ? 'text-brand-ink font-semibold' : 'text-ink-2'}
                 `}
               >

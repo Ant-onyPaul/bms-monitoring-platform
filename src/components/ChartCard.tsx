@@ -82,7 +82,7 @@ export default function ChartCard({
   type,
   data,
   series,
-  color = '#10B981',
+  color = 'var(--color-chart-ok)',
   unit = '',
   xLabel,
   labels,
@@ -132,6 +132,12 @@ export default function ChartCard({
   );
 
   const showLegend = resolved.length > 1;
+
+  /* An area fill is a statement about the distance from zero. When a series
+     sits entirely below zero — rack current while charging — Recharts still
+     fills toward a baseline outside the domain, producing a band that means
+     nothing. Signed series are therefore drawn as a bare line. */
+  const signed = min < 0;
 
   return (
     <Panel className={`flex flex-col ${className}`}>
@@ -188,7 +194,7 @@ export default function ChartCard({
                 name={resolved[0].name}
                 stroke={resolved[0].color}
                 strokeWidth={1.75}
-                fill={`url(#${gradientId})`}
+                fill={signed ? 'none' : `url(#${gradientId})`}
                 dot={false}
                 activeDot={{
                   r: 3.5,
@@ -222,7 +228,7 @@ export default function ChartCard({
                     key={index}
                     fill={
                       Math.abs(Number(row[resolved[0].key]) - mean) > deviation
-                        ? '#F59E0B'
+                        ? 'var(--color-chart-warn)'
                         : resolved[0].color
                     }
                   />

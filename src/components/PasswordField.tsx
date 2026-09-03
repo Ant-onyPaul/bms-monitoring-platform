@@ -28,15 +28,15 @@ export default function PasswordField({
     <div className="w-full text-left">
       <div
         className={`
-          relative flex items-center h-14 rounded-md bg-surface border
-          transition-[border-color,box-shadow] duration-200
+          relative flex items-center h-14 rounded-[10px] bg-veil-1 border
+          transition-[border-color,box-shadow,background-color] duration-200
           [transition-timing-function:var(--ease-precise)]
           ${
             error
               ? 'border-crit shadow-[0_0_0_3px_var(--color-crit-surface)]'
               : isFocused
-                ? 'border-brand shadow-[0_0_0_3px_var(--color-brand-surface)]'
-                : 'border-line-2 hover:border-line-3'
+                ? 'border-brand bg-veil-2 shadow-[0_0_0_3px_var(--color-brand-surface)]'
+                : 'border-line-2 hover:border-line-3 hover:bg-veil-2'
           }
         `}
       >

@@ -46,7 +46,7 @@ export default function ProtectionCard({
   const trippedCount = protections.filter((p) => p.state === 'tripped').length;
 
   return (
-    <Panel className={`flex flex-col ${className}`}>
+    <Panel className={`flex flex-col justify-between ${className}`}>
       <PanelHeader
         title="Protection"
         icon={IconProtection}
@@ -89,7 +89,7 @@ export default function ProtectionCard({
       </div>
 
       {/* Protection set */}
-      <ul className="grid grid-cols-2 gap-x-4 gap-y-0 mt-auto">
+      <ul className="grid grid-cols-2 sm:grid-cols-3 gap-x-5 gap-y-0 mt-auto">
         {protections.map((protection) => (
           <li
             key={protection.label}

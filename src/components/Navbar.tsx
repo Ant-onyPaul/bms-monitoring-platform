@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import CommandPalette from './CommandPalette';
+import ThemeToggle from './ThemeToggle';
 import { Badge, LiveDot } from './ui/Badge';
 import {
   IconMenu,
@@ -112,8 +113,8 @@ export default function Navbar({ toggleSidebar }: any) {
   return (
     <>
       <header
-        className="h-16 shrink-0 sticky top-0 z-30 bg-canvas/95 backdrop-blur-[2px]
-          border-b border-line flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8"
+        className="h-16 shrink-0 sticky top-0 z-30 glass-chrome border-b border-line
+          flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 xl:px-10"
       >
         {/* Orientation */}
         <div className="flex items-center gap-3 min-w-0">
@@ -122,8 +123,8 @@ export default function Navbar({ toggleSidebar }: any) {
             onClick={toggleSidebar}
             aria-label="Open navigation"
             className="lg:hidden -ml-1.5 w-9 h-9 shrink-0 inline-flex items-center justify-center
-              rounded-md text-ink-2 hover:text-ink hover:bg-surface-3 cursor-pointer
-              transition-colors duration-150"
+              rounded-[9px] text-ink-3 hover:text-ink hover:bg-veil-2 cursor-pointer
+              transition-colors duration-200"
           >
             <IconMenu size={18} />
           </button>
@@ -166,14 +167,16 @@ export default function Navbar({ toggleSidebar }: any) {
           <button
             type="button"
             onClick={() => setPaletteOpen(true)}
-            className="hidden md:inline-flex items-center gap-2.5 h-9 pl-3 pr-2 rounded-md
-              bg-surface border border-line text-[12.5px] text-ink-4 cursor-pointer
-              hover:border-line-2 hover:text-ink-3 transition-colors duration-150
-              w-56 lg:w-64 shadow-[var(--shadow-e1)]"
+            className="hidden md:inline-flex items-center gap-2.5 h-9 pl-3 pr-2 rounded-[9px]
+              glass-control text-[12.5px] text-ink-4 cursor-pointer
+              hover:border-line-2 hover:text-ink-2 hover:bg-veil-3
+              transition-[background-color,border-color,color] duration-200
+              w-56 lg:w-72"
           >
             <IconSearch size={14} className="shrink-0" />
             <span className="flex-1 text-left">Search…</span>
-            <kbd className="data-technical text-[10px] border border-line rounded-[3px] px-1.5 py-0.5 bg-surface-2">
+            <kbd className="data-technical text-[10px] text-ink-4 border border-line
+              rounded-[4px] px-1.5 py-0.5 bg-veil-2">
               ⌘K
             </kbd>
           </button>
@@ -182,11 +185,14 @@ export default function Navbar({ toggleSidebar }: any) {
             type="button"
             onClick={() => setPaletteOpen(true)}
             aria-label="Search"
-            className="md:hidden w-9 h-9 inline-flex items-center justify-center rounded-md
-              text-ink-2 hover:bg-surface-3 cursor-pointer transition-colors"
+            className="md:hidden w-9 h-9 inline-flex items-center justify-center rounded-[9px]
+              text-ink-3 hover:bg-veil-2 hover:text-ink cursor-pointer transition-colors"
           >
             <IconSearch size={17} />
           </button>
+
+          {/* Colour theme */}
+          <ThemeToggle />
 
           {/* Notifications */}
           <div ref={notificationsRef} className="relative">
@@ -200,7 +206,7 @@ export default function Navbar({ toggleSidebar }: any) {
               aria-expanded={notificationsOpen}
               className={`relative w-9 h-9 inline-flex items-center justify-center rounded-md
                 cursor-pointer transition-colors duration-150
-                ${notificationsOpen ? 'bg-surface-3 text-ink' : 'text-ink-2 hover:bg-surface-3'}`}
+                ${notificationsOpen ? 'bg-veil-3 text-ink' : 'text-ink-3 hover:bg-veil-2 hover:text-ink-2'}`}
             >
               <IconBell size={17} />
               <span className="absolute top-1.5 right-1.5">
@@ -210,8 +216,8 @@ export default function Navbar({ toggleSidebar }: any) {
 
             {notificationsOpen && (
               <div
-                className="absolute right-0 mt-2 w-[340px] bg-surface border border-line-2
-                  rounded-lg shadow-[var(--shadow-e3)] overflow-hidden animate-menu-in z-[70]"
+                className="absolute right-0 mt-2 w-[352px] glass-menu rounded-[13px]
+                  overflow-hidden animate-menu-in z-[70]"
               >
                 <div className="flex items-center justify-between px-4 py-3 border-b border-line">
                   <span className="label-technical">Active alerts</span>
@@ -230,7 +236,7 @@ export default function Navbar({ toggleSidebar }: any) {
                           : 'text-info';
                     return (
                       <li key={item.id}>
-                        <div className="flex items-start gap-3 px-4 py-3 hover:bg-surface-2 transition-colors">
+                        <div className="flex items-start gap-3 px-4 py-3 hover:bg-veil-1 transition-colors">
                           <Icon size={15} className={`${iconTone} shrink-0 mt-0.5`} />
                           <div className="min-w-0 flex-1">
                             <p className="text-[13px] font-medium text-ink leading-snug">
@@ -262,12 +268,13 @@ export default function Navbar({ toggleSidebar }: any) {
               }}
               aria-label="Account menu"
               aria-expanded={userOpen}
-              className="flex items-center gap-2.5 h-9 pl-1 pr-2 rounded-md cursor-pointer
-                hover:bg-surface-3 transition-colors duration-150"
+              className="flex items-center gap-2.5 h-10 pl-1 pr-2 rounded-[9px] cursor-pointer
+                hover:bg-veil-2 transition-colors duration-200"
             >
               <span
-                className="w-8 h-8 shrink-0 rounded-md bg-ink text-white inline-flex
-                  items-center justify-center text-[11px] font-bold tracking-wide"
+                className="w-8 h-8 shrink-0 rounded-[8px] inline-flex items-center justify-center
+                  text-[11px] font-bold tracking-wide text-on-brand
+                  btn-primary-fill"
               >
                 {initials}
               </span>
@@ -283,8 +290,8 @@ export default function Navbar({ toggleSidebar }: any) {
 
             {userOpen && (
               <div
-                className="absolute right-0 mt-2 w-60 bg-surface border border-line-2 rounded-lg
-                  shadow-[var(--shadow-e3)] overflow-hidden animate-menu-in z-[70]"
+                className="absolute right-0 mt-2 w-64 glass-menu rounded-[13px]
+                  overflow-hidden animate-menu-in z-[70]"
               >
                 <div className="px-4 py-3 border-b border-line">
                   <p className="text-[13px] font-semibold text-ink truncate">
@@ -298,7 +305,7 @@ export default function Navbar({ toggleSidebar }: any) {
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-md text-[13px]
+                    className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[8px] text-[13px]
                       font-medium text-ink-2 hover:text-crit-ink hover:bg-crit-surface
                       cursor-pointer transition-colors"
                   >

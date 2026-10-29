@@ -7,7 +7,10 @@ import StatusBadge from '../../components/StatusBadge';
 import MetricStrip from '../../components/MetricStrip';
 import Button from '../../components/ui/Button';
 import { NameCell, AttributeCell, MonoCell, RowAction, relativeTime } from '../../components/tableCells';
+import RegisterDeviceModal, { UnsavedRegistrationsNotice } from '../../components/admin/RegisterDeviceModal';
 import { Device } from '../../types/database.types';
+import { useAuth } from '../../hooks/useAuth';
+import { canRegisterDevices } from '../../utils/devicePermissions';
 import { IconPlus, IconRack, IconLocation } from '../../components/icons';
 
 const isOnline = (lastSeenAt: string | null) =>
@@ -16,9 +19,12 @@ const isOnline = (lastSeenAt: string | null) =>
 export default function VendorCustomerDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { profile } = useAuth();
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [registeredCount, setRegisteredCount] = useState(0);
 
   // Mock data scoped to this specific customer
-  const [devices] = useState<Device[]>([
+  const [devices, setDevices] = useState<Device[]>([
     { id: '1', customer_id: id || '', device_identifier: 'BMS-A001', name: 'Main HQ Battery', device_type: 'BMS V1', location: 'New York', status: 'active', last_seen_at: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
     { id: '2', customer_id: id || '', device_identifier: 'BMS-A002', name: 'Branch 1 Backup', device_type: 'BMS V2', location: 'Boston', status: 'active', last_seen_at: new Date(Date.now() - 3600000).toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
   ]);
@@ -63,11 +69,15 @@ export default function VendorCustomerDetails() {
         title="Customer overview"
         description="Devices installed at this customer's sites."
         actions={
-          <Button variant="primary" icon={IconPlus}>
-            Register device
-          </Button>
+          canRegisterDevices(profile?.role) && (
+            <Button variant="primary" icon={IconPlus} onClick={() => setIsRegisterOpen(true)}>
+              Register device
+            </Button>
+          )
         }
       />
+
+      <UnsavedRegistrationsNotice count={registeredCount} />
 
       <MetricStrip
         className="mb-5"
@@ -90,6 +100,18 @@ export default function VendorCustomerDetails() {
         onRowClick={(row) => navigate(`/vendor/devices/${row.id}`)}
         emptyTitle="No devices for this customer"
         emptyHint="Register a device to begin collecting telemetry."
+      />
+
+      <RegisterDeviceModal
+        isOpen={isRegisterOpen}
+        onClose={() => setIsRegisterOpen(false)}
+        role={profile?.role}
+        existingDevices={devices}
+        customerId={id}
+        onSubmit={(device) => {
+          setDevices((prev) => [...prev, device]);
+          setRegisteredCount((n) => n + 1);
+        }}
       />
     </DashboardLayout>
   );

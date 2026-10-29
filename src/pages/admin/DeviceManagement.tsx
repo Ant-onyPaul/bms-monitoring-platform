@@ -6,8 +6,12 @@ import DataTable from '../../components/DataTable';
 import StatusBadge from '../../components/StatusBadge';
 import MetricStrip from '../../components/MetricStrip';
 import Button from '../../components/ui/Button';
+import { Badge } from '../../components/ui/Badge';
+import RegisterDeviceModal, { UnsavedRegistrationsNotice } from '../../components/admin/RegisterDeviceModal';
 import { NameCell, AttributeCell, MonoCell, RowAction, relativeTime } from '../../components/tableCells';
 import { Device } from '../../types/database.types';
+import { useAuth } from '../../hooks/useAuth';
+import { canRegisterDevices } from '../../utils/devicePermissions';
 import { IconPlus, IconRack, IconLocation } from '../../components/icons';
 
 const isOnline = (lastSeenAt: string | null) =>
@@ -15,7 +19,10 @@ const isOnline = (lastSeenAt: string | null) =>
 
 export default function DeviceManagement() {
   const navigate = useNavigate();
-  const [devices] = useState<Device[]>([
+  const { profile } = useAuth();
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [registeredCount, setRegisteredCount] = useState(0);
+  const [devices, setDevices] = useState<Device[]>([
     { id: '1', customer_id: '1', device_identifier: 'BMS-A001', name: 'Main HQ Battery', device_type: 'BMS V1', location: 'New York', status: 'active', last_seen_at: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
     { id: '2', customer_id: '2', device_identifier: 'BMS-A002', name: 'Branch 1 Backup', device_type: 'BMS V2', location: 'Boston', status: 'active', last_seen_at: new Date(Date.now() - 3600000).toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
   ]);
@@ -30,6 +37,19 @@ export default function DeviceManagement() {
       accessor: (row: Device) => (
         <AttributeCell icon={IconLocation}>{row.location ?? '—'}</AttributeCell>
       ),
+    },
+    {
+      header: 'IMEI',
+      accessor: (row: Device) =>
+        row.imei ? (
+          <span className="inline-flex items-center gap-2">
+            <MonoCell>{row.imei}</MonoCell>
+            {row.imei_source === 'demo-simulation' && <Badge tone="warn" size="xs">DEMO</Badge>}
+          </span>
+        ) : (
+          <MonoCell>—</MonoCell>
+        ),
+      compact: true as const,
     },
     {
       header: 'Type',
@@ -67,11 +87,15 @@ export default function DeviceManagement() {
         title="Devices"
         description="Every battery management unit registered on the platform. Select a device to open its monitoring workspace."
         actions={
-          <Button variant="primary" icon={IconPlus}>
-            Register device
-          </Button>
+          canRegisterDevices(profile?.role) && (
+            <Button variant="primary" icon={IconPlus} onClick={() => setIsRegisterOpen(true)}>
+              Register device
+            </Button>
+          )
         }
       />
+
+      <UnsavedRegistrationsNotice count={registeredCount} />
 
       <MetricStrip
         className="mb-5"
@@ -90,6 +114,17 @@ export default function DeviceManagement() {
         onRowClick={(row) => navigate(`/admin/devices/${row.id}`)}
         emptyTitle="No devices registered"
         emptyHint="Register a device to begin collecting telemetry."
+      />
+
+      <RegisterDeviceModal
+        isOpen={isRegisterOpen}
+        onClose={() => setIsRegisterOpen(false)}
+        role={profile?.role}
+        existingDevices={devices}
+        onSubmit={(device) => {
+          setDevices((prev) => [...prev, device]);
+          setRegisteredCount((n) => n + 1);
+        }}
       />
     </DashboardLayout>
   );

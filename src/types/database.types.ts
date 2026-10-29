@@ -41,6 +41,10 @@ export interface Device {
   last_seen_at: string | null;
   created_at: string;
   updated_at: string;
+  /** Cellular modem IMEI. Separate from `id` and `device_identifier`. Not yet a Supabase column. */
+  imei?: string | null;
+  /** How the IMEI was set; 'demo-simulation' values are fictional, not real IMEIs. */
+  imei_source?: 'manual' | 'demo-simulation' | null;
 }
 
 export interface DeviceCurrentData {

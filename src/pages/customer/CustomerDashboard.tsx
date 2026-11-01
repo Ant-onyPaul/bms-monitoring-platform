@@ -6,29 +6,14 @@ import { Panel, PanelHeader } from '../../components/ui/Panel';
 import { Readout, Meter } from '../../components/ui/Metric';
 import { Badge, LiveDot } from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
-import AlertCard, { AlertItem } from '../../components/AlertCard';
+import AlertCard from '../../components/AlertCard';
 import Gauge from '../../components/ui/Gauge';
+import { relativeTime } from '../../components/tableCells';
+import { useOverview } from '../../hooks/useOverview';
 import { IconRack, IconHealth, IconCharge, IconTemperature } from '../../components/icons';
 
-const SITE_EVENTS: AlertItem[] = [
-  {
-    type: 'info',
-    message: 'Overnight charge window completed',
-    time: '6 hours ago',
-    source: 'Main HQ Battery',
-    code: 'CHG-0042',
-    detail: 'Pack reached 92% before the window closed. No cell exceeded its balancing threshold.',
-  },
-  {
-    type: 'warning',
-    message: 'Backup unit has not reported',
-    time: '1 hour ago',
-    source: 'Branch 1 Backup',
-    code: 'LINK-4004',
-    detail:
-      'The unit last reported an hour ago. If it does not resume within the day, contact your vendor.',
-  },
-];
+/** Net pack current below this magnitude (A) reads as idle rather than charging/discharging. */
+const IDLE_CURRENT_A = 0.5;
 
 /* =============================================================================
    CustomerDashboard
@@ -42,12 +27,25 @@ export default function CustomerDashboard() {
   const { profile } = useAuth();
   const navigate = useNavigate();
 
-  // Mock data for Customer Dashboard
+  // Scoped by the API to this customer's own devices.
+  const { overview, error, devices, online, offline, lastIngest, ingestFresh, alerts } = useOverview();
+  const fleet = overview?.fleet;
+
   const stats = {
-    totalDevices: 12,
-    onlineDevices: 11,
-    offlineDevices: 1,
+    totalDevices: devices,
+    onlineDevices: online,
+    offlineDevices: offline,
   };
+
+  const current = fleet?.total_current ?? null;
+  const flow =
+    current === null
+      ? { label: 'No data', tone: 'neutral' as const }
+      : current > IDLE_CURRENT_A
+        ? { label: 'Charging', tone: 'ok' as const }
+        : current < -IDLE_CURRENT_A
+          ? { label: 'Discharging', tone: 'info' as const }
+          : { label: 'Idle', tone: 'neutral' as const };
 
   return (
     <DashboardLayout>
@@ -62,31 +60,37 @@ export default function CustomerDashboard() {
         }
       />
 
+      {error && <p role="alert" className="mb-4 text-[13px] text-crit-ink">{error}</p>}
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-5">
-        {/* Stored energy */}
+        {/* State of charge */}
         <Panel className="lg:col-span-4 flex flex-col">
           <PanelHeader
-            title="Stored energy"
+            title="State of charge"
             icon={IconCharge}
             actions={
-              <Badge tone="ok" size="xs" dot live>
-                Charging
+              <Badge tone={flow.tone} size="xs" dot live={flow.tone !== 'neutral'}>
+                {flow.label}
               </Badge>
             }
           />
           <div className="flex-1 flex items-center justify-center py-2">
-            <Gauge
-              value={82}
-              label="of capacity"
-              tone="brand"
-              threshold={20}
-              size={140}
-              caption={
-                <span>
-                  <span className="data-technical text-ink-2">7.4 kWh</span> available of 9.0 kWh
-                </span>
-              }
-            />
+            {fleet?.avg_soc != null ? (
+              <Gauge
+                value={Math.round(fleet.avg_soc * 10) / 10}
+                label="charged"
+                tone="brand"
+                threshold={20}
+                size={140}
+                caption={
+                  <span>
+                    Average of {stats.onlineDevices} reporting system{stats.onlineDevices === 1 ? '' : 's'}
+                  </span>
+                }
+              />
+            ) : (
+              <p className="text-[13px] text-ink-3 text-center">No system is reporting right now.</p>
+            )}
           </div>
         </Panel>
 
@@ -109,7 +113,7 @@ export default function CustomerDashboard() {
             <span
               className="bg-ok"
               style={{
-                width: `${(stats.onlineDevices / stats.totalDevices) * 100}%`,
+                width: `${stats.totalDevices ? (stats.onlineDevices / stats.totalDevices) * 100 : 0}%`,
                 transition: 'width 620ms var(--ease-precise)',
               }}
             />
@@ -124,37 +128,51 @@ export default function CustomerDashboard() {
                   <span className="label-technical">Warmest system</span>
                 </span>
                 <span className="data-technical text-[13px] text-ink">
-                  34.2<span className="text-[11px] text-ink-4 ml-0.5">°C</span>
+                  {fleet?.max_temperature != null ? fleet.max_temperature.toFixed(1) : '—'}
+                  <span className="text-[11px] text-ink-4 ml-0.5">°C</span>
                 </span>
               </div>
-              <Meter value={34.2} min={10} max={60} nominal={[10, 35]} tone="ok" height={4} />
+              {fleet?.max_temperature != null && (
+                <>
+                  <Meter
+                    value={fleet.max_temperature}
+                    min={10}
+                    max={60}
+                    nominal={[10, 45]}
+                    tone={fleet.max_temperature >= 45 ? 'warn' : 'ok'}
+                    height={4}
+                  />
+                  <p className="mt-1.5 text-[11.5px] text-ink-4 truncate">{fleet.warmest_device}</p>
+                </>
+              )}
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="flex items-center gap-1.5">
                   <IconHealth size={12} className="text-ink-4" />
-                  <span className="label-technical">Fleet health</span>
+                  <span className="label-technical">Average health (SoH)</span>
                 </span>
                 <span className="data-technical text-[13px] text-ink">
-                  97<span className="text-[11px] text-ink-4 ml-0.5">%</span>
+                  {fleet?.avg_soh != null ? fleet.avg_soh.toFixed(1) : '—'}
+                  <span className="text-[11px] text-ink-4 ml-0.5">%</span>
                 </span>
               </div>
-              <Meter value={97} min={0} max={100} tone="ok" height={4} />
+              {fleet?.avg_soh != null && <Meter value={fleet.avg_soh} min={0} max={100} tone="ok" height={4} />}
             </div>
           </div>
 
           <div className="flex items-center gap-2 mt-5 pt-4 border-t border-line">
-            <LiveDot tone="ok" size={6} live />
+            <LiveDot tone={ingestFresh ? 'ok' : 'idle'} size={6} live={ingestFresh} />
             <span className="text-[12px] text-ink-3">
-              Telemetry received from {stats.onlineDevices} of {stats.totalDevices} systems in the
-              last minute
+              {stats.onlineDevices} of {stats.totalDevices} systems reported in the last five minutes · last
+              message <span className="data-technical text-ink-2">{relativeTime(lastIngest)}</span>
             </span>
           </div>
         </Panel>
       </div>
 
-      <AlertCard alerts={SITE_EVENTS} title="Recent events" />
+      <AlertCard alerts={alerts} title="System alerts" />
     </DashboardLayout>
   );
 }

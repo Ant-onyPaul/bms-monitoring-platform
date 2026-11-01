@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
 import PageHeader from '../../components/PageHeader';
@@ -6,17 +6,19 @@ import DataTable from '../../components/DataTable';
 import StatusBadge from '../../components/StatusBadge';
 import MetricStrip from '../../components/MetricStrip';
 import Button from '../../components/ui/Button';
+import OnboardModal from '../../components/OnboardModal';
 import { NameCell, MonoCell, RowAction } from '../../components/tableCells';
-import { Customer } from '../../types/database.types';
-import { IconPlus, IconCustomers, IconVendors } from '../../components/icons';
+import { Customer, Vendor } from '../../types/database.types';
+import { useApiList } from '../../hooks/useApiList';
+import { CUSTOMER_FIELDS, createCustomer } from '../../lib/onboarding';
+import { IconPlus, IconCustomers, IconVendors, IconRack } from '../../components/icons';
 
 export default function CustomerManagement() {
   const navigate = useNavigate();
-  const [customers] = useState<Customer[]>([
-    { id: '1', vendor_id: '1', name: 'Customer A1', code: 'CUST-A1', status: 'active', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: '2', vendor_id: '1', name: 'Customer A2', code: 'CUST-A2', status: 'active', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: '3', vendor_id: '2', name: 'Customer B1', code: 'CUST-B1', status: 'active', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  ]);
+  const { rows: customers, setRows: setCustomers, error } = useApiList<Customer>('/api/customers');
+  const { rows: vendors } = useApiList<Vendor>('/api/vendors');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const vendorOptions = useMemo(() => vendors.map((v) => ({ id: v.id, name: v.name, meta: v.code })), [vendors]);
 
   const columns = [
     {
@@ -25,7 +27,11 @@ export default function CustomerManagement() {
     },
     {
       header: 'Vendor',
-      accessor: (row: Customer) => <MonoCell>VEN-{row.vendor_id}</MonoCell>,
+      accessor: (row: Customer) => <MonoCell>{row.vendor_name}</MonoCell>,
+    },
+    {
+      header: 'Devices',
+      accessor: (row: Customer) => <MonoCell>{row.device_count}</MonoCell>,
       compact: true as const,
     },
     {
@@ -43,8 +49,6 @@ export default function CustomerManagement() {
     },
   ];
 
-  const activeCustomers = customers.filter((c) => c.status === 'active').length;
-
   return (
     <DashboardLayout>
       <PageHeader
@@ -52,7 +56,7 @@ export default function CustomerManagement() {
         title="Customers"
         description="Every customer across all vendors. Select a customer to see the devices installed at their sites."
         actions={
-          <Button variant="primary" icon={IconPlus}>
+          <Button variant="primary" icon={IconPlus} onClick={() => setIsModalOpen(true)}>
             Add customer
           </Button>
         }
@@ -62,14 +66,12 @@ export default function CustomerManagement() {
         className="mb-5"
         items={[
           { label: 'Total customers', value: customers.length, icon: IconCustomers },
-          { label: 'Active', value: activeCustomers, tone: 'ok' },
-          {
-            label: 'Vendors represented',
-            value: new Set(customers.map((c) => c.vendor_id)).size,
-            icon: IconVendors,
-          },
+          { label: 'Vendors represented', value: new Set(customers.map((c) => c.vendor_id)).size, icon: IconVendors },
+          { label: 'Devices', value: customers.reduce((n, c) => n + c.device_count, 0), icon: IconRack },
         ]}
       />
+
+      {error && <p role="alert" className="mb-4 text-[13px] text-crit-ink">{error}</p>}
 
       <DataTable
         columns={columns}
@@ -78,6 +80,21 @@ export default function CustomerManagement() {
         onRowClick={(row) => navigate(`/admin/customers/${row.id}`)}
         emptyTitle="No customers yet"
         emptyHint="Customers are created under a vendor."
+      />
+
+      <OnboardModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Add customer"
+        description="Creates the customer under the chosen vendor, with its own login."
+        submitLabel="Create customer"
+        fields={CUSTOMER_FIELDS}
+        parent={{ label: 'Vendor', options: vendorOptions, emptyHint: 'Add a vendor first — every customer belongs to one.' }}
+        onCreate={async (values, vendorId) => {
+          const { customer, credentials } = await createCustomer(values, vendorId);
+          setCustomers((prev) => [customer, ...prev]);
+          return credentials;
+        }}
       />
     </DashboardLayout>
   );

@@ -32,6 +32,10 @@ export interface SelectProps<T extends SelectOption> {
   widthClass?: string;
   align?: 'left' | 'right';
   className?: string;
+  /** "toolbar" is the compact filter control; "field" matches InputField inside
+   *  forms — label inside the box, and a menu that opens in the flow so a
+   *  scrolling dialog body cannot clip it. */
+  variant?: 'toolbar' | 'field';
 }
 
 export default function Select<T extends SelectOption>({
@@ -43,7 +47,9 @@ export default function Select<T extends SelectOption>({
   widthClass = 'w-56',
   align = 'left',
   className = '',
+  variant = 'toolbar',
 }: SelectProps<T>) {
+  const isField = variant === 'field';
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(() =>
     Math.max(0, options.findIndex((o) => o.id === value.id)),
@@ -144,7 +150,7 @@ export default function Select<T extends SelectOption>({
 
   return (
     <div ref={rootRef} className={`relative ${className}`}>
-      {label && <span className="label-technical block mb-1.5">{label}</span>}
+      {label && !isField && <span className="label-technical block mb-1.5">{label}</span>}
 
       <button
         ref={triggerRef}
@@ -159,7 +165,17 @@ export default function Select<T extends SelectOption>({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listboxId : undefined}
-        className={`
+        className={
+          isField
+            ? `w-full h-14 flex items-center justify-between gap-2 px-3.5 rounded-[10px]
+               bg-veil-1 border text-left cursor-pointer select-none
+               transition-[border-color,box-shadow,background-color] duration-200
+               [transition-timing-function:var(--ease-precise)]
+               focus-visible:outline-none
+               ${open
+                 ? 'border-brand bg-veil-2 shadow-[0_0_0_3px_var(--color-brand-surface)]'
+                 : 'border-line-2 hover:border-line-3 hover:bg-veil-2 focus-visible:border-brand focus-visible:shadow-[0_0_0_3px_var(--color-brand-surface)]'}`
+            : `
           ${widthClass} h-[38px] inline-flex items-center justify-between gap-2
           px-3 rounded-[9px] glass-control text-[13px] font-medium text-ink
           cursor-pointer select-none
@@ -168,12 +184,27 @@ export default function Select<T extends SelectOption>({
           hover:bg-veil-3
           focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand
           ${open ? '!border-line-3 bg-veil-3' : ''}
-        `}
+        `
+        }
       >
-        <span className="flex items-center gap-2 min-w-0">
-          {Icon && <Icon size={14} className="text-ink-4 shrink-0" />}
-          <span className="truncate">{value.name}</span>
-        </span>
+        {isField ? (
+          <span className="flex flex-col min-w-0 pt-0.5">
+            <span
+              className={`text-[10px] uppercase tracking-[0.09em] font-semibold ${open ? 'text-brand-ink' : 'text-ink-3'}`}
+            >
+              {label}
+            </span>
+            <span className="mt-0.5 text-[14px] text-ink truncate">
+              {value.name}
+              {value.meta && <span className="ml-2 data-technical text-[11px] text-ink-4">{value.meta}</span>}
+            </span>
+          </span>
+        ) : (
+          <span className="flex items-center gap-2 min-w-0">
+            {Icon && <Icon size={14} className="text-ink-4 shrink-0" />}
+            <span className="truncate">{value.name}</span>
+          </span>
+        )}
         <IconChevronDown
           size={14}
           className={`text-ink-4 shrink-0 transition-transform duration-200 [transition-timing-function:var(--ease-precise)] ${
@@ -190,12 +221,16 @@ export default function Select<T extends SelectOption>({
           tabIndex={-1}
           aria-activedescendant={`${listboxId}-${activeIndex}`}
           onKeyDown={onListKeyDown}
-          className={`
+          className={
+            isField
+              ? 'relative mt-2 w-full max-h-56 overflow-y-auto scrollbar-fine rounded-[10px] border border-line-2 bg-surface py-1.5 outline-none animate-menu-in'
+              : `
             absolute z-[60] mt-2 ${widthClass} max-h-72 overflow-y-auto scrollbar-fine
             glass-menu rounded-[11px]
             py-1.5 outline-none animate-menu-in
             ${align === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left'}
-          `}
+          `
+          }
         >
           {options.map((option, index) => {
             const selected = option.id === value.id;

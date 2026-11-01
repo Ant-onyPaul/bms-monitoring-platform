@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
 import PageHeader from '../../components/PageHeader';
@@ -6,6 +7,7 @@ import StatusBadge from '../../components/StatusBadge';
 import MetricStrip from '../../components/MetricStrip';
 import { NameCell, AttributeCell, MonoCell, RowAction, relativeTime } from '../../components/tableCells';
 import { Device } from '../../types/database.types';
+import { api } from '../../lib/api';
 import { IconRack, IconLocation } from '../../components/icons';
 
 const isOnline = (lastSeenAt: string | null) =>
@@ -13,9 +15,8 @@ const isOnline = (lastSeenAt: string | null) =>
 
 export default function VendorDevices() {
   const navigate = useNavigate();
-  const devices: Device[] = [
-    { id: '1', customer_id: '1', device_identifier: 'BMS-A001', name: 'Main HQ Battery', device_type: 'BMS V1', location: 'New York', status: 'active', last_seen_at: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  ];
+  const [devices, setDevices] = useState<Device[]>([]);
+  useEffect(() => { api<Device[]>('/api/devices').then(setDevices).catch(console.error); }, []);
 
   const columns = [
     {

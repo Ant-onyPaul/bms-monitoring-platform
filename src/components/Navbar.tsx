@@ -103,11 +103,7 @@ export default function Navbar({ toggleSidebar }: any) {
     .toUpperCase();
 
   const handleLogout = async () => {
-    if (import.meta.env.VITE_MOCK_AUTH === 'true') {
-      window.location.href = '/login';
-    } else {
-      await signOut();
-    }
+    await signOut();
   };
 
   return (

@@ -13,7 +13,7 @@ import SystemInformation from './SystemInformation';
 import { buildDailyEnergy, buildSeries, getSystemTelemetry } from '../../data/bmsTelemetry';
 import { OPERATING_STATE, operatingStateLabel } from '../../types/bms.types';
 import { chartColors } from '../ui/chartTheme';
-import { Device } from '../../types/database.types';
+import { Device, DeviceCurrentData } from '../../types/database.types';
 import {
   IconVoltage,
   IconCurrent,
@@ -70,11 +70,24 @@ interface BmsOverviewProps {
   deviceId?: string;
   /** Identity record, used by the System information panel. */
   device?: Device;
+  liveData?: DeviceCurrentData | null;
 }
 
-export function BmsOverview({ deviceId, device }: BmsOverviewProps) {
+export function BmsOverview({ deviceId, device, liveData }: BmsOverviewProps) {
   const key = deviceId || 'default';
-  const telemetry = useMemo(() => getSystemTelemetry(key), [key]);
+  const telemetry = useMemo(() => {
+    const base = getSystemTelemetry(key);
+    return liveData ? {
+      ...base,
+      batteryVoltage: liveData.voltage ?? base.batteryVoltage,
+      batteryCurrent: liveData.current ?? base.batteryCurrent,
+      batteryPower: liveData.power ?? base.batteryPower,
+      soc: liveData.soc ?? base.soc,
+      soh: liveData.soh ?? base.soh,
+      maxCellTemperature: liveData.temperature ?? base.maxCellTemperature,
+      minCellTemperature: liveData.temperature ?? base.minCellTemperature,
+    } : base;
+  }, [key, liveData]);
 
   /* Trend windows. Seeded per device so a chart is stable across tab switches. */
   const socSeries = useMemo(
@@ -149,6 +162,7 @@ export function BmsOverview({ deviceId, device }: BmsOverviewProps) {
 
   return (
     <div className="space-y-5">
+      {liveData?.raw_data?.test_only && <p className="text-xs text-amber-500">Synthetic CAN test data · last message {new Date(liveData.received_at).toLocaleTimeString()}</p>}
       {/* ---------------------------------------------- Status & battery telemetry */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         <StatusCard

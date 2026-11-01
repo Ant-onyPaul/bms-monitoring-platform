@@ -19,8 +19,7 @@ import { IconMail, IconLock, IconPack } from '../components/icons';
    and it sits over the brightest part of the ambient field so the blur has
    something to refract.
 
-   Auth behaviour is untouched: mock sign-in routes to the admin dashboard,
-   otherwise the Supabase-not-connected notice fires.
+   Sign in through the local role-aware API.
    ========================================================================== */
 
 const FLEET_FACTS = [
@@ -37,23 +36,18 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth(); // In a real app we'd call supabase.auth.signInWithPassword
+  const { signIn } = useAuth();
+  const [error, setError] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
     setIsLoading(true);
 
-    // Simulate small API delay to show off the button loading state
-    setTimeout(() => {
-      // For V1 dev, bypass real auth if using VITE_MOCK_AUTH
-      if (import.meta.env.VITE_MOCK_AUTH === 'true') {
-        navigate('/admin/dashboard');
-      } else {
-        alert('Supabase integration not fully connected yet. Use VITE_MOCK_AUTH=true');
-      }
-      setIsLoading(false);
-    }, 600);
+    setError('');
+    try { const profile = await signIn(email, password); navigate(`/${profile.role}/dashboard`); }
+    catch (err) { setError(err instanceof Error ? err.message : 'Login failed'); }
+    finally { setIsLoading(false); }
   };
 
   return (
@@ -136,7 +130,8 @@ export default function Login() {
                 administrator.
               </p>
 
-              <form className="space-y-4 mt-7" onSubmit={handleLogin}>
+                <form className="space-y-4 mt-7" onSubmit={handleLogin}>
+                  {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
                 <InputField
                   id="email"
                   label="Email Address"

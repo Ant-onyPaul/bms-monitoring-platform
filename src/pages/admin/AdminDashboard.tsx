@@ -3,12 +3,15 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 import { useAuth } from '../../hooks/useAuth';
 import DashboardLayout from '../../components/DashboardLayout';
 import PageHeader from '../../components/PageHeader';
-import AlertCard, { AlertItem } from '../../components/AlertCard';
+import AlertCard from '../../components/AlertCard';
 import { Panel, PanelHeader } from '../../components/ui/Panel';
 import { Readout } from '../../components/ui/Metric';
 import { Badge, LiveDot } from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import { axisProps, gridProps, ChartTooltip, Y_AXIS_WIDTH, CHART_MARGIN } from '../../components/ui/chartTheme';
+import { relativeTime } from '../../components/tableCells';
+import { Overview } from '../../types/database.types';
+import { useOverview } from '../../hooks/useOverview';
 import {
   IconRack,
   IconVendors,
@@ -18,52 +21,11 @@ import {
   IconClock,
 } from '../../components/icons';
 
-const MOCK_ALERTS: AlertItem[] = [
-  {
-    type: 'fault',
-    message: 'Offline Device Detected: INV-02',
-    time: '10 mins ago',
-    source: 'Site Bravo · Rack 2',
-    code: 'LINK-4004',
-    detail:
-      'No telemetry frames received for 11 minutes. The gateway is reachable, so the fault is most likely on the rack CAN segment.',
-  },
-  {
-    type: 'warning',
-    message: 'High temperature on Site Alpha',
-    time: '1 hour ago',
-    source: 'Site Alpha · Rack 1 · Module 03',
-    code: 'OT-1140',
-    detail:
-      'Peak probe reached 44.2 °C, within 0.8 °C of the configured limit. Ambient at the site is running 6 °C above seasonal norm.',
-  },
-  {
-    type: 'info',
-    message: 'Firmware updated on 12 devices',
-    time: '3 hours ago',
-    source: 'Fleet · scheduled window',
-    code: 'FW-2143',
-    detail: 'Controller v2.14.3 rolled out to the Northeast group. No rollbacks reported.',
-  },
-];
-
-const MOCK_ACTIVITY = [
-  { user: 'Admin User', action: 'Approved vendor registration: Solartron', time: '1 hour ago' },
-  { user: 'System', action: 'Automated backup completed', time: '5 hours ago' },
-  { user: 'Tech Support', action: 'Resolved support ticket #1042', time: '1 day ago' },
-  { user: 'Admin User', action: 'Created new device profile: BATT-X1', time: '2 days ago' },
-];
-
-/** Fourteen days of fleet availability, as a percentage of devices reporting. */
-const AVAILABILITY = [
-  99.4, 99.6, 99.5, 98.9, 99.2, 99.7, 99.8, 99.6, 99.1, 98.4, 99.0, 99.5, 99.7, 96.6,
-].map((value, index) => ({
-  label: new Date(Date.UTC(2026, 7, 16 + index)).toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-  }),
-  value,
-}));
+const ACTIVITY_VERB: Record<Overview['activity'][number]['kind'], string> = {
+  vendor: 'Vendor onboarded',
+  customer: 'Customer onboarded',
+  device: 'Device registered',
+};
 
 /* =============================================================================
    AdminDashboard
@@ -77,19 +39,29 @@ const AVAILABILITY = [
 export default function AdminDashboard() {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const { overview, error, devices, online, offline, reportingPct: availabilityPct, lastIngest, ingestFresh, alerts } =
+    useOverview();
 
-  // Mock data for Admin Dashboard
+  const counts = overview?.counts;
   const stats = {
-    totalVendors: 12,
-    totalCustomers: 45,
-    totalDevices: 1240,
-    onlineDevices: 1198,
-    offlineDevices: 42,
+    totalVendors: counts?.vendors ?? 0,
+    totalCustomers: counts?.customers ?? 0,
+    totalDevices: devices,
+    onlineDevices: online,
+    offlineDevices: offline,
   };
 
-  const availabilityPct = (stats.onlineDevices / stats.totalDevices) * 100;
-  const warningDevices = 17;
+  const warningDevices = counts?.attention ?? 0;
   const healthyDevices = stats.onlineDevices - warningDevices;
+  // Bar segments are shares of the fleet; an empty fleet draws an empty bar.
+  const share = (n: number) => (stats.totalDevices ? (n / stats.totalDevices) * 100 : 0);
+
+  // Days before any device was registered have no availability to plot.
+  const availability = (overview?.availability ?? []).map((d) => ({
+    label: new Date(d.day).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
+    value: d.registered ? Math.round((d.reported / d.registered) * 1000) / 10 : null,
+  }));
+
 
   return (
     <DashboardLayout>
@@ -103,6 +75,8 @@ export default function AdminDashboard() {
           </Button>
         }
       />
+
+      {error && <p role="alert" className="mb-4 text-[13px] text-crit-ink">{error}</p>}
 
       {/* ------------------------------------------------ Fleet availability */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-5">
@@ -128,18 +102,9 @@ export default function AdminDashboard() {
 
           {/* Population bar — proportional, so the mix reads as a shape */}
           <div className="flex h-2.5 rounded-full overflow-hidden bg-surface-3 mb-2">
-            <span
-              className="bg-ok"
-              style={{ width: `${(healthyDevices / stats.totalDevices) * 100}%` }}
-            />
-            <span
-              className="bg-warn"
-              style={{ width: `${(warningDevices / stats.totalDevices) * 100}%` }}
-            />
-            <span
-              className="bg-crit"
-              style={{ width: `${(stats.offlineDevices / stats.totalDevices) * 100}%` }}
-            />
+            <span className="bg-ok" style={{ width: `${share(healthyDevices)}%` }} />
+            <span className="bg-warn" style={{ width: `${share(warningDevices)}%` }} />
+            <span className="bg-crit" style={{ width: `${share(stats.offlineDevices)}%` }} />
           </div>
           <div className="flex items-center gap-4 mb-5">
             <LegendItem tone="bg-ok" label="Nominal" value={healthyDevices} />
@@ -149,7 +114,7 @@ export default function AdminDashboard() {
 
           <div className="h-[168px] -mx-1">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={AVAILABILITY} margin={CHART_MARGIN}>
+              <AreaChart data={availability} margin={CHART_MARGIN}>
                 <defs>
                   <linearGradient id="availability" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="var(--color-chart-ok)" stopOpacity={0.16} />
@@ -158,7 +123,7 @@ export default function AdminDashboard() {
                 </defs>
                 <CartesianGrid {...gridProps} />
                 <XAxis dataKey="label" {...axisProps} minTickGap={30} />
-                <YAxis {...axisProps} domain={[96, 100]} width={Y_AXIS_WIDTH} tickCount={5} />
+                <YAxis {...axisProps} domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} width={Y_AXIS_WIDTH} />
                 <Tooltip
                   content={<ChartTooltip unit="%" />}
                   cursor={{ stroke: 'var(--color-line-2)', strokeWidth: 1 }}
@@ -170,7 +135,8 @@ export default function AdminDashboard() {
                   stroke="var(--color-chart-ok)"
                   strokeWidth={1.75}
                   fill="url(#availability)"
-                  dot={false}
+                  // A dot per day keeps a lone day of data visible; a line needs two.
+                  dot={{ r: 2.5, fill: 'var(--color-chart-ok)', strokeWidth: 0 }}
                   activeDot={{ r: 3.5, fill: 'var(--color-chart-ok)', stroke: 'var(--color-surface)', strokeWidth: 2 }}
                   animationDuration={700}
                 />
@@ -204,17 +170,21 @@ export default function AdminDashboard() {
               icon={IconRack}
               label="Devices"
               value={stats.totalDevices.toLocaleString()}
-              hint={`≈${Math.round(stats.totalDevices / stats.totalCustomers)} per customer`}
+              hint={
+                stats.totalCustomers
+                  ? `≈${Math.round(stats.totalDevices / stats.totalCustomers)} per customer`
+                  : 'Registered by customers'
+              }
               onClick={() => navigate('/admin/devices')}
             />
           </ul>
 
           <div className="mt-auto px-5 py-4 border-t border-line bg-surface-2">
             <div className="flex items-center gap-2">
-              <LiveDot tone="ok" size={6} live />
+              <LiveDot tone={ingestFresh ? 'ok' : 'idle'} size={6} live={ingestFresh} />
               <span className="text-[12px] text-ink-3">
-                Ingest healthy · last write{' '}
-                <span className="data-technical text-ink-2">0.4s ago</span>
+                {ingestFresh ? 'Ingest healthy' : 'No recent messages'} · last write{' '}
+                <span className="data-technical text-ink-2">{relativeTime(lastIngest)}</span>
               </span>
             </div>
           </div>
@@ -229,23 +199,33 @@ export default function AdminDashboard() {
           </div>
 
           <ul className="divide-y divide-line">
-            {MOCK_ACTIVITY.map((activity, index) => (
+            {(overview?.activity ?? []).map((activity, index) => (
               <li key={index} className="px-5 py-3.5 hover:bg-surface-2 transition-colors">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="text-[13px] text-ink leading-snug">{activity.action}</p>
-                    <p className="text-[11.5px] text-ink-4 mt-1">{activity.user}</p>
+                    <p className="text-[13px] text-ink leading-snug">
+                      {ACTIVITY_VERB[activity.kind]}: {activity.name}
+                      {activity.kind === 'device' && (
+                        <span className="text-ink-3"> · {activity.imei} for {activity.customer_name}</span>
+                      )}
+                    </p>
+                    <p className="text-[11.5px] text-ink-4 mt-1">by {activity.actor ?? 'System'}</p>
                   </div>
                   <span className="data-technical text-[11px] text-ink-4 shrink-0 pt-0.5">
-                    {activity.time}
+                    {relativeTime(activity.at)}
                   </span>
                 </div>
               </li>
             ))}
+            {overview && overview.activity.length === 0 && (
+              <li className="px-5 py-6 text-[13px] text-ink-3">
+                Nothing yet. Onboarded vendors, customers and devices appear here.
+              </li>
+            )}
           </ul>
         </Panel>
 
-        <AlertCard alerts={MOCK_ALERTS} title="System alerts" className="lg:col-span-5" />
+        <AlertCard alerts={alerts} title="System alerts" className="lg:col-span-5" />
       </div>
     </DashboardLayout>
   );

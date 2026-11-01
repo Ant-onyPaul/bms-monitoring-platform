@@ -6,28 +6,10 @@ import { Panel, PanelHeader } from '../../components/ui/Panel';
 import { Readout } from '../../components/ui/Metric';
 import { Badge, LiveDot } from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
-import AlertCard, { AlertItem } from '../../components/AlertCard';
+import AlertCard from '../../components/AlertCard';
+import { relativeTime } from '../../components/tableCells';
+import { useOverview } from '../../hooks/useOverview';
 import { IconRack, IconCustomers, IconHealth, IconChevronRight } from '../../components/icons';
-
-const VENDOR_ALERTS: AlertItem[] = [
-  {
-    type: 'warning',
-    message: 'Customer A1 · Module 03 running warm',
-    time: '20 mins ago',
-    source: 'BMS-A001 · Rack 1',
-    code: 'OT-1140',
-    detail:
-      'Peak probe at 38.5 °C against a 45 °C limit. Not yet actionable, but worth checking site ventilation on the next visit.',
-  },
-  {
-    type: 'info',
-    message: 'Customer A2 · device registered',
-    time: '2 days ago',
-    source: 'BMS-A104',
-    code: 'REG-0091',
-    detail: 'New unit commissioned and reporting on a 1 s interval.',
-  },
-];
 
 /* =============================================================================
    VendorDashboard
@@ -40,15 +22,16 @@ export default function VendorDashboard() {
   const { profile } = useAuth();
   const navigate = useNavigate();
 
-  // Mock data for Vendor Dashboard
-  const stats = {
-    totalCustomers: 15,
-    totalDevices: 420,
-    onlineDevices: 405,
-    offlineDevices: 15,
-  };
+  // Scoped by the API to this vendor's customers and their devices.
+  const { overview, error, devices, online, offline, reportingPct: availability, lastIngest, ingestFresh, alerts } =
+    useOverview();
 
-  const availability = (stats.onlineDevices / stats.totalDevices) * 100;
+  const stats = {
+    totalCustomers: overview?.counts.customers ?? 0,
+    totalDevices: devices,
+    onlineDevices: online,
+    offlineDevices: offline,
+  };
 
   return (
     <DashboardLayout>
@@ -62,6 +45,8 @@ export default function VendorDashboard() {
           </Button>
         }
       />
+
+      {error && <p role="alert" className="mb-4 text-[13px] text-crit-ink">{error}</p>}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-5">
         <Panel className="lg:col-span-7">
@@ -114,7 +99,11 @@ export default function VendorDashboard() {
               <Readout
                 label="Customers"
                 value={stats.totalCustomers}
-                hint={`≈${Math.round(stats.totalDevices / stats.totalCustomers)} devices each`}
+                hint={
+                  stats.totalCustomers
+                    ? `≈${Math.round(stats.totalDevices / stats.totalCustomers)} devices each`
+                    : 'Add a customer to get started'
+                }
                 size="lg"
               />
             </span>
@@ -126,16 +115,17 @@ export default function VendorDashboard() {
 
           <div className="mt-auto px-5 py-4 bg-surface-2">
             <div className="flex items-center gap-2">
-              <LiveDot tone="ok" size={6} live />
+              <LiveDot tone={ingestFresh ? 'ok' : 'idle'} size={6} live={ingestFresh} />
               <span className="text-[12px] text-ink-3">
-                Telemetry ingest healthy across all sites
+                {ingestFresh ? 'Telemetry arriving' : 'No recent telemetry'} · last message{' '}
+                <span className="data-technical text-ink-2">{relativeTime(lastIngest)}</span>
               </span>
             </div>
           </div>
         </Panel>
       </div>
 
-      <AlertCard alerts={VENDOR_ALERTS} title="Recent events" />
+      <AlertCard alerts={alerts} title="Device alerts" />
     </DashboardLayout>
   );
 }

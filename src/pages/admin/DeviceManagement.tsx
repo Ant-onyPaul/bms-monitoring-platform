@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
 import PageHeader from '../../components/PageHeader';
@@ -6,8 +6,11 @@ import DataTable from '../../components/DataTable';
 import StatusBadge from '../../components/StatusBadge';
 import MetricStrip from '../../components/MetricStrip';
 import Button from '../../components/ui/Button';
+import OnboardModal from '../../components/OnboardModal';
 import { NameCell, AttributeCell, MonoCell, RowAction, relativeTime } from '../../components/tableCells';
-import { Device } from '../../types/database.types';
+import { Customer, Device } from '../../types/database.types';
+import { useApiList } from '../../hooks/useApiList';
+import { DEVICE_FIELDS, createDevice } from '../../lib/onboarding';
 import { IconPlus, IconRack, IconLocation } from '../../components/icons';
 
 const isOnline = (lastSeenAt: string | null) =>
@@ -15,15 +18,22 @@ const isOnline = (lastSeenAt: string | null) =>
 
 export default function DeviceManagement() {
   const navigate = useNavigate();
-  const [devices] = useState<Device[]>([
-    { id: '1', customer_id: '1', device_identifier: 'BMS-A001', name: 'Main HQ Battery', device_type: 'BMS V1', location: 'New York', status: 'active', last_seen_at: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: '2', customer_id: '2', device_identifier: 'BMS-A002', name: 'Branch 1 Backup', device_type: 'BMS V2', location: 'Boston', status: 'active', last_seen_at: new Date(Date.now() - 3600000).toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  ]);
+  const { rows: devices, setRows: setDevices, error } = useApiList<Device>('/api/devices');
+  const { rows: customers } = useApiList<Customer>('/api/customers');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const customerOptions = useMemo(
+    () => customers.map((c) => ({ id: c.id, name: c.name, meta: c.vendor_name })),
+    [customers],
+  );
 
   const columns = [
     {
       header: 'Device',
       accessor: (row: Device) => <NameCell name={row.name} code={row.device_identifier} />,
+    },
+    {
+      header: 'Customer',
+      accessor: (row: Device) => <MonoCell>{row.customer_name ?? '—'}</MonoCell>,
     },
     {
       header: 'Location',
@@ -67,7 +77,7 @@ export default function DeviceManagement() {
         title="Devices"
         description="Every battery management unit registered on the platform. Select a device to open its monitoring workspace."
         actions={
-          <Button variant="primary" icon={IconPlus}>
+          <Button variant="primary" icon={IconPlus} onClick={() => setIsModalOpen(true)}>
             Register device
           </Button>
         }
@@ -90,6 +100,23 @@ export default function DeviceManagement() {
         onRowClick={(row) => navigate(`/admin/devices/${row.id}`)}
         emptyTitle="No devices registered"
         emptyHint="Register a device to begin collecting telemetry."
+      />
+
+      {error && <p role="alert" className="mt-4 text-[13px] text-crit-ink">{error}</p>}
+
+      <OnboardModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Register device"
+        description="Telemetry is matched to this device by the IMEI of its LTE module."
+        submitLabel="Register device"
+        fields={DEVICE_FIELDS}
+        parent={{ label: 'Customer', options: customerOptions, emptyHint: 'Add a customer first — every device belongs to one.' }}
+        onCreate={async (values, customerId) => {
+          const device = await createDevice(values, customerId);
+          setDevices((prev) => [device, ...prev]);
+          return null;
+        }}
       />
     </DashboardLayout>
   );

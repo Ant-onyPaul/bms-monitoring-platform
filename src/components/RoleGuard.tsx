@@ -2,6 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Role } from '../types/database.types';
 import Logo from './Logo';
+import ChangePasswordScreen from './ChangePasswordScreen';
 
 interface RoleGuardProps {
   allowedRoles: Role[];
@@ -42,6 +43,11 @@ export default function RoleGuard({ allowedRoles }: RoleGuardProps) {
 
     // Otherwise fallback to login or an unauthorized page
     return <Navigate to="/login" replace />;
+  }
+
+  // A temporary password unlocks nothing but the step that replaces it.
+  if (profile.must_change_password) {
+    return <ChangePasswordScreen />;
   }
 
   // Authorized

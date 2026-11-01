@@ -1,21 +1,28 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
 import PageHeader from '../../components/PageHeader';
 import DataTable from '../../components/DataTable';
 import StatusBadge from '../../components/StatusBadge';
 import MetricStrip from '../../components/MetricStrip';
+import Button from '../../components/ui/Button';
+import OnboardModal from '../../components/OnboardModal';
 import { NameCell, AttributeCell, MonoCell, RowAction, relativeTime } from '../../components/tableCells';
 import { Device } from '../../types/database.types';
-import { IconRack, IconLocation } from '../../components/icons';
+import { useApiList } from '../../hooks/useApiList';
+import { useAuth } from '../../hooks/useAuth';
+import { DEVICE_FIELDS, createDevice } from '../../lib/onboarding';
+import { IconPlus, IconRack, IconLocation } from '../../components/icons';
 
 const isOnline = (lastSeenAt: string | null) =>
   lastSeenAt ? Date.now() - new Date(lastSeenAt).getTime() < 5 * 60 * 1000 : false;
 
 export default function CustomerDevices() {
   const navigate = useNavigate();
-  const devices: Device[] = [
-    { id: '1', customer_id: '1', device_identifier: 'BMS-A001', name: 'Main HQ Battery', device_type: 'BMS V1', location: 'New York', status: 'active', last_seen_at: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  ];
+  const { profile } = useAuth();
+  // The API scopes this list to the signed-in customer.
+  const { rows: devices, setRows: setDevices, error } = useApiList<Device>('/api/devices');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const columns = [
     {
@@ -54,6 +61,11 @@ export default function CustomerDevices() {
         eyebrow="Your storage"
         title="My devices"
         description="Battery systems installed at your sites. Select a system to see its live condition and history."
+        actions={
+          <Button variant="primary" icon={IconPlus} onClick={() => setIsModalOpen(true)}>
+            Register device
+          </Button>
+        }
       />
 
       <MetricStrip
@@ -75,7 +87,24 @@ export default function CustomerDevices() {
         searchPlaceholder="Search systems…"
         onRowClick={(row) => navigate(`/customer/devices/${row.id}`)}
         emptyTitle="No systems yet"
-        emptyHint="Your installed battery systems will appear here."
+        emptyHint="Register a system with the IMEI printed on its LTE module."
+      />
+
+      {error && <p role="alert" className="mt-4 text-[13px] text-crit-ink">{error}</p>}
+
+      <OnboardModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Register device"
+        description="Enter the IMEI printed on the LTE module. Its telemetry will appear on this device."
+        submitLabel="Register device"
+        fields={DEVICE_FIELDS}
+        owner={{ label: 'Customer', name: profile?.full_name ?? '—' }}
+        onCreate={async (values) => {
+          const device = await createDevice(values, null);
+          setDevices((prev) => [device, ...prev]);
+          return null;
+        }}
       />
     </DashboardLayout>
   );

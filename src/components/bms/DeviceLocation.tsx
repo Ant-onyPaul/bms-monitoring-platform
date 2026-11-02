@@ -9,10 +9,9 @@ import {
   formatDistance,
   formatLatitude,
   formatLongitude,
-  getDeviceSiting,
   metresPerDegreeLng,
   projectToLocalMetres,
-} from '../../data/demoGeofence';
+} from '../../utils/geofence';
 import { IconLocation, IconInfo, IconExternal } from '../icons';
 
 /* =============================================================================
@@ -22,12 +21,12 @@ import { IconLocation, IconInfo, IconExternal } from '../icons';
    IoT geofencing.
 
    The platform still has no position feed — `devices.location` is a free-text
-   place name and there is no coordinate or geofence column anywhere. So the map
-   renders DEMONSTRATION coordinates from `data/demoGeofence.ts`, which is kept
-   deliberately outside the schema types. It is labelled as demo data on the
-   face of the map, beside the title, and in the note underneath; the labelling
-   is driven by `siting.source`, so it disappears by itself the day a real fix
-   arrives rather than needing to be remembered.
+   place name and there is no coordinate or geofence field anywhere. Siting is
+   therefore passed in by the caller: null for live devices (the dialog shows
+   the "no position on record" frame), and DEMONSTRATION coordinates only inside
+   the explicit demo preview. Demo siting is labelled on the face of the map,
+   beside the title, and in the note underneath; the labelling is driven by
+   `siting.source`, so it disappears by itself the day a real fix arrives.
 
    The map is hand-drawn SVG: no map library, no external tiles, no network. A
    real street map under a fabricated pin would be the most convincing thing on
@@ -41,6 +40,8 @@ interface DeviceLocationProps {
   /** Shown in the dialog so the user knows which unit they are locating. */
   deviceName: string;
   deviceIdentifier: string;
+  /** Coordinates and geofence. Null when the device has no position on record. */
+  siting?: DeviceSiting | null;
   /** `header` is the large device-header treatment; `inline` fits a data cell. */
   variant?: 'header' | 'inline';
   className?: string;
@@ -50,6 +51,7 @@ export default function DeviceLocation({
   location,
   deviceName,
   deviceIdentifier,
+  siting = null,
   variant = 'header',
   className = '',
 }: DeviceLocationProps) {
@@ -117,6 +119,7 @@ export default function DeviceLocation({
         location={label}
         deviceName={deviceName}
         deviceIdentifier={deviceIdentifier}
+        siting={siting}
       />
     </>
   );
@@ -136,15 +139,15 @@ function LocationDialog({
   location,
   deviceName,
   deviceIdentifier,
+  siting,
 }: {
   isOpen: boolean;
   onClose: () => void;
   location: string;
   deviceName: string;
   deviceIdentifier: string;
+  siting: DeviceSiting | null;
 }) {
-  const siting = getDeviceSiting(deviceIdentifier);
-
   return (
     <Modal
       isOpen={isOpen}

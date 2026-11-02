@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { api } from '../lib/api';
+import { Device, Role } from '../types/database.types';
+import { DeviceShortcut, toDeviceShortcuts } from '../services/navigation';
 import {
   IconSearch,
   IconDashboard,
@@ -17,6 +20,9 @@ import {
    A faster route to pages that already exist — it navigates, and does nothing
    else. No destination here is reachable only through the palette, so the
    product's flow is unchanged whether or not anyone ever opens it.
+
+   Device shortcuts are the signed-in user's own devices from /api/devices,
+   fetched each time the palette opens.
    -------------------------------------------------------------------------- */
 
 interface Command {
@@ -34,19 +40,15 @@ const ROUTES: Record<string, Command[]> = {
     { id: 'a-vend', label: 'Vendors', group: 'Navigate', icon: IconVendors, path: '/admin/vendors' },
     { id: 'a-cust', label: 'Customers', group: 'Navigate', icon: IconCustomers, path: '/admin/customers' },
     { id: 'a-dev', label: 'Devices', group: 'Navigate', icon: IconRack, path: '/admin/devices' },
-    { id: 'a-d1', label: 'Main HQ Battery', group: 'Devices', hint: 'BMS-A001 · New York', icon: IconDevice, path: '/admin/devices/1' },
-    { id: 'a-d2', label: 'Branch 1 Backup', group: 'Devices', hint: 'BMS-A002 · Boston', icon: IconDevice, path: '/admin/devices/2' },
   ],
   vendor: [
     { id: 'v-dash', label: 'Dashboard', group: 'Navigate', icon: IconDashboard, path: '/vendor/dashboard' },
     { id: 'v-cust', label: 'Customers', group: 'Navigate', icon: IconCustomers, path: '/vendor/customers' },
     { id: 'v-dev', label: 'Devices', group: 'Navigate', icon: IconRack, path: '/vendor/devices' },
-    { id: 'v-d1', label: 'Main HQ Battery', group: 'Devices', hint: 'BMS-A001 · New York', icon: IconDevice, path: '/vendor/devices/1' },
   ],
   customer: [
     { id: 'c-dash', label: 'Dashboard', group: 'Navigate', icon: IconDashboard, path: '/customer/dashboard' },
     { id: 'c-dev', label: 'My Devices', group: 'Navigate', icon: IconRack, path: '/customer/devices' },
-    { id: 'c-d1', label: 'Main HQ Battery', group: 'Devices', hint: 'BMS-A001 · New York', icon: IconDevice, path: '/customer/devices/1' },
   ],
 };
 
@@ -64,7 +66,25 @@ export default function CommandPalette({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const commands = ROUTES[profile?.role || 'customer'] ?? ROUTES.customer;
+  const role: Role = profile?.role ?? 'customer';
+  const [devices, setDevices] = useState<DeviceShortcut[]>([]);
+
+  useEffect(() => {
+    if (!isOpen || !profile) return;
+    let alive = true;
+    api<Device[]>('/api/devices')
+      .then((rows) => { if (alive) setDevices(toDeviceShortcuts(rows, role)); })
+      .catch(() => { if (alive) setDevices([]); });
+    return () => { alive = false; };
+  }, [isOpen, profile, role]);
+
+  const commands = useMemo<Command[]>(
+    () => [
+      ...(ROUTES[role] ?? ROUTES.customer),
+      ...devices.map((d) => ({ ...d, group: 'Devices', icon: IconDevice })),
+    ],
+    [role, devices],
+  );
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();

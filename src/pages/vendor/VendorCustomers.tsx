@@ -72,6 +72,11 @@ export default function VendorCustomers() {
         className="mb-5"
         items={[
           { label: 'Customers', value: customers.length, icon: IconCustomers },
+          {
+            label: 'Active',
+            value: customers.filter((c) => c.status === 'active').length,
+            tone: 'ok',
+          },
           { label: 'Devices', value: customers.reduce((n, c) => n + c.device_count, 0), icon: IconRack },
         ]}
       />

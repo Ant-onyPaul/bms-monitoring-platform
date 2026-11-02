@@ -7,7 +7,6 @@ import { Panel, PanelHeader } from '../ui/Panel';
 import { Readout } from '../ui/Metric';
 import { Badge, LiveDot } from '../ui/Badge';
 import PageHeader from '../PageHeader';
-import { getSystemTelemetry } from '../../data/bmsTelemetry';
 import { RackModule, RackTelemetry, operatingStateLabel } from '../../types/bms.types';
 import {
   IconRack,
@@ -44,6 +43,8 @@ import {
    was not needed, so the module row at the bottom is a *navigator* — module
    identity and nothing else — which keeps the module → cell drill-down without
    restating twelve modules' worth of telemetry the rack panels already cover.
+
+   Presentation only: racks arrive as a prop from the workspace data source.
    ========================================================================== */
 
 /* -----------------------------------------------------------------------------
@@ -96,26 +97,28 @@ const RACK_STATUS_STYLE: Record<
 };
 
 interface RackOverviewProps {
-  deviceId?: string;
+  /** At least one rack; the workspace shows an empty state instead when there are none. */
+  racks: RackTelemetry[];
+  /** Device name for the description line. */
+  deviceLabel?: string;
   onModuleSelect?: (moduleId: string) => void;
 }
 
-export function RackOverview({ deviceId, onModuleSelect }: RackOverviewProps) {
-  const telemetry = useMemo(() => getSystemTelemetry(deviceId || 'default'), [deviceId]);
-
+export function RackOverview({ racks, deviceLabel, onModuleSelect }: RackOverviewProps) {
   const rackOptions: Rack[] = useMemo(
     () =>
-      telemetry.racks.map((rack) => ({
+      racks.map((rack) => ({
         id: rack.id,
         name: rack.name,
         meta: operatingStateLabel(rack.state),
       })),
-    [telemetry],
+    [racks],
   );
 
-  const [selectedId, setSelectedId] = useState(rackOptions[0].id);
-  const rack = telemetry.racks.find((r) => r.id === selectedId) ?? telemetry.racks[0];
+  const [selectedId, setSelectedId] = useState(rackOptions[0]?.id);
+  const rack = racks.find((r) => r.id === selectedId) ?? racks[0];
   const selectedOption = rackOptions.find((r) => r.id === selectedId) ?? rackOptions[0];
+  if (!rack) return null;
 
   const rackStatus = deriveRackStatus(rack);
   const statusStyle = RACK_STATUS_STYLE[rackStatus];
@@ -127,7 +130,7 @@ export function RackOverview({ deviceId, onModuleSelect }: RackOverviewProps) {
         eyebrow="Rack drill-down"
         title="Rack overview"
         description={`Electrical, energy and diagnostic state for the selected rack${
-          deviceId ? ` on device ${deviceId}` : ''
+          deviceLabel ? ` on ${deviceLabel}` : ''
         }.`}
         actions={
           <RackSelector
@@ -145,7 +148,7 @@ export function RackOverview({ deviceId, onModuleSelect }: RackOverviewProps) {
         aria-label="Select a rack"
         className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5"
       >
-        {telemetry.racks.map((candidate) => (
+        {racks.map((candidate) => (
           <RackChip
             key={candidate.id}
             rack={candidate}
@@ -485,7 +488,7 @@ function MetricCell({
    matrix, all of which name the module directly.
    -------------------------------------------------------------------------- */
 
-function ModuleNavigator({
+export function ModuleNavigator({
   modules,
   onSelect,
 }: {

@@ -66,6 +66,7 @@ export default function CustomerManagement() {
         className="mb-5"
         items={[
           { label: 'Total customers', value: customers.length, icon: IconCustomers },
+          { label: 'Active', value: customers.filter((c) => c.status === 'active').length, tone: 'ok' },
           { label: 'Vendors represented', value: new Set(customers.map((c) => c.vendor_id)).size, icon: IconVendors },
           { label: 'Devices', value: customers.reduce((n, c) => n + c.device_count, 0), icon: IconRack },
         ]}

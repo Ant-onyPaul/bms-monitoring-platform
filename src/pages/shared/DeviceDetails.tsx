@@ -1,73 +1,160 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
 import StatusBadge from '../../components/StatusBadge';
-import ChartCard from '../../components/ChartCard';
-import { LiveDot } from '../../components/ui/Badge';
+import Tabs from '../../components/ui/Tabs';
+import Button from '../../components/ui/Button';
+import { Badge, LiveDot } from '../../components/ui/Badge';
 import { Panel } from '../../components/ui/Panel';
-import { chartColors } from '../../components/ui/chartTheme';
 import { relativeTime } from '../../components/tableCells';
-import { Device, TelemetryPoint } from '../../types/database.types';
-import { useDeviceRealtime } from '../../hooks/useDeviceRealtime';
-import { api } from '../../lib/api';
+import DeviceLocation from '../../components/bms/DeviceLocation';
+import { BmsOverview } from '../../components/bms/BmsOverview';
+import { RackOverview } from '../../components/bms/RackOverview';
+import { ModuleOverview } from '../../components/bms/ModuleOverview';
+import { CellOverview } from '../../components/bms/CellOverview';
+import { BmsHistory } from '../../components/bms/BmsHistory';
+import { BmsAlerts } from '../../components/bms/BmsAlerts';
+import { DataUnavailable } from '../../components/bms/DataUnavailable';
+import { DemoDataNotice, DemoFrame } from '../../components/bms/DemoDataNotice';
+import { FaultBanner } from '../../components/bms/FaultBanner';
+import { OperatingStateBadge } from '../../components/bms/OperatingState';
+import { useDeviceWorkspace } from '../../services/deviceData/useDeviceWorkspace';
+import { DEMO_MODE } from '../../services/deviceData/demoMode';
+import {
+  BACKEND_REQUIREMENTS,
+  LIVE_SECTIONS,
+  buildLiveHistory,
+  buildLiveOverview,
+  isStreaming,
+} from '../../services/deviceData/liveAdapters';
+import type { HistoryRangeId, SectionId } from '../../services/deviceData/types';
 import {
   IconArrowLeft,
   IconDevice,
+  IconRack,
   IconPack,
+  IconTrend,
+  IconCellGrid,
+  IconHistory,
+  IconWarning,
+  IconModule,
   IconCustomers,
-  IconLocation,
   IconClock,
+  IconEye,
 } from '../../components/icons';
 
+type DemoSource = typeof import('../../services/deviceData/demoSource');
+
+type WorkspaceTab = {
+  id: SectionId;
+  label: string;
+  icon: React.ComponentType<{ size?: number | string; className?: string }>;
+};
+
 /* =============================================================================
-   DeviceDetails
+   DeviceDetails — the BMS workspace
 
-   Everything on this page comes from the device's own telemetry, matched to it
-   by the IMEI in each MQTT message. Nothing is generated client-side: a reading
-   the device has not sent is shown as a dash, not as a plausible number.
+   The header is the workspace's fixed frame of reference: which unit this is,
+   where it is, whether it is reporting, and its headline condition. It stays
+   identical across tabs so switching views never costs the reader their place,
+   and it only ever shows live data.
 
-   Rack, module and cell views return once the CAN decoder supplies that data.
+   Navigation follows the hardware hierarchy — device → rack → module → cell —
+   then History and Alerts.
+
+   Data: every tab renders from the live API (services/deviceData). A section
+   the API does not serve yet shows an empty state that names what is needed.
+   "Preview layout with demo data" swaps the current tab — and only it — for
+   the original layout filled from the demo source, under a SIMULATED banner and
+   frame. Changing tab or reloading ends the preview; it never starts by itself.
+
+   DEMO_MODE (local dev server with the dev demo backend only; constant false in
+   every production build) renders the original workspace in full from the
+   simulation — header figures, fault banner, operating state, location map and
+   all six tabs — since the whole app is then a demo under the SIMULATED ribbon.
    ========================================================================== */
 
-/** A device that has not reported for this long is shown as not streaming. */
-const STALE_MS = 30_000;
-const HISTORY_POINTS = 120;
+const TABS: WorkspaceTab[] = [
+  { id: 'overview', label: 'Overview', icon: IconTrend },
+  { id: 'racks', label: 'Racks', icon: IconRack },
+  { id: 'modules', label: 'Modules', icon: IconModule },
+  { id: 'cells', label: 'Cells', icon: IconCellGrid },
+  { id: 'history', label: 'History', icon: IconHistory },
+  { id: 'alerts', label: 'Alerts', icon: IconWarning },
+];
 
-const fmt = (v: number | null | undefined, digits = 1) =>
-  v === null || v === undefined || Number.isNaN(v) ? '—' : v.toFixed(digits);
+const UNAVAILABLE_COPY: Record<'racks' | 'modules' | 'cells' | 'alerts', { title: string; message: string; icon: WorkspaceTab['icon'] }> = {
+  racks: {
+    title: 'Rack data is not available yet',
+    message: 'The device API reports pack-level telemetry only. Rack status, measurements and cell extremes appear here once the backend provides them.',
+    icon: IconRack,
+  },
+  modules: {
+    title: 'Module data is not available yet',
+    message: 'Modules are listed per rack, so this view needs the same rack data as the Racks tab.',
+    icon: IconModule,
+  },
+  cells: {
+    title: 'Cell data is not available yet',
+    message: 'Per-cell voltages, balancing state and module probe temperatures appear here once the backend provides them.',
+    icon: IconCellGrid,
+  },
+  alerts: {
+    title: 'Device alerts are not available yet',
+    message: 'The API does not report faults, warnings or events for individual devices yet.',
+    icon: IconWarning,
+  },
+};
 
 const timeLabel = (iso: string) =>
   new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
+const fixed = (value: number | null | undefined, digits = 1) =>
+  value === null || value === undefined || !Number.isFinite(value) ? '—' : value.toFixed(digits);
+
 export default function DeviceDetails() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
-  const [device, setDevice] = useState<Device | null>(null);
-  const [deviceError, setDeviceError] = useState<string | null>(null);
-  const [history, setHistory] = useState<TelemetryPoint[]>([]);
-  const { data: live } = useDeviceRealtime(id);
+  const { device, deviceError, live, history } = useDeviceWorkspace(id);
 
+  const [activeTab, setActiveTab] = useState<SectionId>('overview');
+  const [selectedModuleId, setSelectedModuleId] = useState<string | undefined>();
+  const [preview, setPreview] = useState(false);
+  const [demo, setDemo] = useState<DemoSource | null>(null);
+  const [historyRange, setHistoryRange] = useState<HistoryRangeId>('24h');
+
+  /* The simulation is a separate chunk, fetched the first time a preview is
+     asked for (or straight away in demo mode) — the live workspace never loads it. */
   useEffect(() => {
-    api<Device>(`/api/devices/${encodeURIComponent(id)}`)
-      .then(setDevice)
-      .catch((e) => setDeviceError(e instanceof Error ? e.message : 'Could not load device'));
-  }, [id]);
+    if (!(preview || DEMO_MODE) || demo) return;
+    import('../../services/deviceData/demoSource')
+      .then((module) => setDemo(module))
+      .catch(() => setPreview(false));
+  }, [preview, demo]);
 
-  useEffect(() => {
-    let alive = true;
-    const refresh = () =>
-      api<TelemetryPoint[]>(`/api/devices/${encodeURIComponent(id)}/telemetry/history?limit=${HISTORY_POINTS}`)
-        .then((rows) => { if (alive) setHistory(rows); })
-        .catch(() => {});
-    refresh();
-    const timer = window.setInterval(refresh, 5000);
-    return () => { alive = false; window.clearInterval(timer); };
-  }, [id]);
+  const changeTab = (tab: SectionId) => {
+    setActiveTab(tab);
+    setPreview(false);
+  };
 
-  const lastSeen = live?.received_at ?? device?.last_seen_at ?? null;
-  const streaming = !!live && Date.now() - new Date(live.received_at).getTime() < STALE_MS;
-  const labels = history.map((p) => timeLabel(p.received_at));
-  const series = (key: keyof Omit<TelemetryPoint, 'received_at'>) => history.map((p) => p[key] ?? NaN);
+  /* Drilling from a module into its cells stays inside the current preview. */
+  const openModule = (moduleId: string) => {
+    setSelectedModuleId(moduleId);
+    setActiveTab('cells');
+  };
+
+  const liveOverview = useMemo(
+    () => buildLiveOverview({ live, history, now: Date.now(), formatAge: relativeTime, formatTime: timeLabel }),
+    [live, history],
+  );
+  const liveHistory = useMemo(() => buildLiveHistory(history, timeLabel), [history]);
+
+  const deviceKey = device?.id ?? id;
+  const demoRacks = useMemo(() => (demo ? demo.buildDemoRacks(deviceKey) : null), [demo, deviceKey]);
+  const demoHeader = useMemo(
+    () => (DEMO_MODE && demo && device ? demo.buildDemoHeader(deviceKey, device.device_identifier) : null),
+    [demo, device, deviceKey],
+  );
 
   if (deviceError) {
     return (
@@ -78,64 +165,202 @@ export default function DeviceDetails() {
     );
   }
 
+  const lastSeen = live?.received_at ?? device?.last_seen_at ?? null;
+  const streaming = isStreaming(live, Date.now());
+  const deviceLabel = device?.name;
+  const isTestData = !DEMO_MODE && Boolean(live?.raw_data?.test_only);
+
+  const previewing = (preview || DEMO_MODE) && demo !== null;
+
+  const tabs = demoHeader
+    ? TABS.map((tab) =>
+        tab.id === 'alerts'
+          ? { ...tab, count: demoHeader.activeAlerts, tone: demoHeader.fault?.severity === 'fault' ? ('crit' as const) : ('warn' as const) }
+          : tab,
+      )
+    : TABS;
+
+  const renderDemo = (source: DemoSource) => {
+    switch (activeTab) {
+      case 'overview':
+        return device ? (
+          <BmsOverview data={source.buildDemoOverview(deviceKey, device.device_identifier, !DEMO_MODE)} device={device} />
+        ) : null;
+      case 'racks':
+        return demoRacks && <RackOverview racks={demoRacks.racks} deviceLabel={deviceLabel} onModuleSelect={openModule} />;
+      case 'modules':
+        return demoRacks && (
+          <ModuleOverview
+            racks={demoRacks.racks}
+            cellsPerModule={demoRacks.cellsPerModule}
+            deviceLabel={deviceLabel}
+            onModuleSelect={openModule}
+          />
+        );
+      case 'cells':
+        return demoRacks && (
+          <CellOverview
+            key={selectedModuleId ?? 'first'}
+            racks={demoRacks.racks}
+            cellsPerModule={demoRacks.cellsPerModule}
+            getModuleDetail={demoRacks.getModuleDetail}
+            moduleId={selectedModuleId}
+            deviceLabel={deviceLabel}
+          />
+        );
+      case 'history':
+        return (
+          <BmsHistory
+            data={source.buildDemoHistory(deviceKey, historyRange)}
+            deviceLabel={deviceLabel}
+            range={historyRange}
+            onRangeChange={setHistoryRange}
+          />
+        );
+      case 'alerts':
+        return <BmsAlerts alerts={source.buildDemoAlerts(deviceKey)} deviceLabel={deviceLabel} />;
+    }
+  };
+
+  const renderLive = () => {
+    if (activeTab === 'overview' && LIVE_SECTIONS.overview) {
+      return device ? (
+        <BmsOverview data={liveOverview} device={device} />
+      ) : (
+        <p className="text-[13px] text-ink-3">Loading device…</p>
+      );
+    }
+    if (activeTab === 'history' && LIVE_SECTIONS.history) {
+      return <BmsHistory data={liveHistory} deviceLabel={deviceLabel} />;
+    }
+    const key = activeTab as keyof typeof UNAVAILABLE_COPY;
+    const copy = UNAVAILABLE_COPY[key];
+    return (
+      <DataUnavailable
+        title={copy.title}
+        icon={copy.icon}
+        message={copy.message}
+        requirement={BACKEND_REQUIREMENTS[key]}
+        onPreview={() => setPreview(true)}
+      />
+    );
+  };
+
+  const hasLiveView = LIVE_SECTIONS[activeTab];
+
   return (
     <DashboardLayout>
-      <header className="mb-6">
-        <BackButton onClick={() => navigate(-1)} />
+      <div>
+        {/* ------------------------------------------------ Device context */}
+        <header className="mb-5">
+          <BackButton onClick={() => navigate(-1)} />
 
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-[28px] leading-tight font-semibold text-ink tracking-[-0.025em]">
-            {device?.name ?? 'Loading device…'}
-          </h1>
-          {device && <StatusBadge lastSeenAt={lastSeen} status={device.status} />}
-        </div>
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-[28px] leading-tight font-semibold text-ink tracking-[-0.025em]">
+                  {device?.name ?? 'Loading device…'}
+                </h1>
+                {device && <StatusBadge lastSeenAt={lastSeen} status={device.status} />}
+                {demoHeader && <OperatingStateBadge state={demoHeader.state} />}
+                {isTestData && (
+                  <Badge tone="warn" size="xs">
+                    Synthetic CAN test data
+                  </Badge>
+                )}
+              </div>
 
-        <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-3.5">
-          <MetaItem icon={IconDevice} label="IMEI" value={device?.device_identifier ?? '—'} />
-          <MetaItem icon={IconCustomers} label="Customer" value={device?.customer_name ?? '—'} />
-          <MetaItem icon={IconLocation} label="Location" value={device?.location ?? '—'} />
-          <MetaItem icon={IconPack} label="Type" value={device?.device_type ?? '—'} />
-          <MetaItem icon={IconClock} label="Last message" value={relativeTime(lastSeen)} />
-        </dl>
-      </header>
+              {/* Location is given its own line at body scale rather than being
+                  one entry in a metadata rail — an operator needs to know which
+                  site they are looking at before anything else. It is also the
+                  entry point to the geofencing map, which stays empty until the
+                  device has coordinates. */}
+              {device && (
+                <div className="mt-2.5">
+                  <DeviceLocation
+                    location={device.location}
+                    deviceName={device.name}
+                    deviceIdentifier={device.device_identifier}
+                    siting={demoHeader?.siting ?? null}
+                    variant="header"
+                  />
+                </div>
+              )}
 
-      {/* ------------------------------------------------ Live readings */}
-      <section aria-label="Live readings" className="mb-6">
-        <div className="flex items-center gap-2 mb-3">
-          <LiveDot tone={streaming ? 'ok' : 'idle'} size={6} live={streaming} />
-          <span className="label-technical">
-            {streaming ? 'Streaming live' : live ? 'Not reporting' : 'Waiting for first message'}
-          </span>
-        </div>
-        <div
-          className="rounded-[10px] border border-line bg-line shadow-[var(--shadow-e1)]
-            overflow-hidden grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-px"
-        >
-          <ReadingCell label="State of charge" value={fmt(live?.soc)} unit="%" />
-          <ReadingCell label="State of health" value={fmt(live?.soh)} unit="%" />
-          <ReadingCell label="Pack voltage" value={fmt(live?.voltage)} unit="V" />
-          <ReadingCell label="Current" value={fmt(live?.current, 2)} unit="A" />
-          <ReadingCell label="Power" value={fmt(live?.power, 0)} unit="W" />
-          <ReadingCell label="Temperature" value={fmt(live?.temperature)} unit="°C" />
-        </div>
-      </section>
+              {demoHeader ? (
+                <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-3.5">
+                  <MetaItem icon={IconDevice} label="Identifier" value={device?.device_identifier ?? '—'} />
+                  <MetaItem icon={IconPack} label="Type" value={device?.device_type ?? '—'} />
+                  <MetaItem icon={IconRack} label="Configuration" value={demoHeader.configuration} />
+                </dl>
+              ) : (
+                <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-3.5">
+                  <MetaItem icon={IconDevice} label="IMEI" value={device?.imei ?? device?.device_identifier ?? '—'} />
+                  <MetaItem icon={IconCustomers} label="Customer" value={device?.customer_name ?? '—'} />
+                  <MetaItem icon={IconPack} label="Type" value={device?.device_type ?? '—'} />
+                  <MetaItem icon={IconClock} label="Last message" value={relativeTime(lastSeen)} />
+                </dl>
+              )}
+            </div>
 
-      {/* ------------------------------------------------ Recent trend */}
-      {history.length > 1 ? (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-          <ChartCard title="Pack voltage" type="line" unit="Voltage (V)" xLabel="Time" labels={labels} data={series('voltage')} color={chartColors.info} />
-          <ChartCard title="Current" type="line" unit="Current (A)" xLabel="Time" labels={labels} data={series('current')} color={chartColors.violet} zeroLine />
-          <ChartCard title="State of charge" type="line" unit="SoC (%)" xLabel="Time" labels={labels} data={series('soc')} color={chartColors.ok} />
-          <ChartCard title="Temperature" type="line" unit="Temperature (°C)" xLabel="Time" labels={labels} data={series('temperature')} color={chartColors.warn} />
+            {/* Headline condition.
+                A grid rather than a row: at 390px four cells cannot sit side by
+                side, and clipping the last one would hide the link state. The
+                gap-px over a line-coloured ground draws the dividers, so the
+                rule stays correct however the grid wraps. */}
+            <div
+              className="shrink-0 rounded-[10px] border border-line bg-line shadow-[var(--shadow-e1)]
+                overflow-hidden grid grid-cols-2 sm:grid-cols-4 gap-px"
+            >
+              <SummaryCell label="State of charge" value={fixed(demoHeader ? demoHeader.soc : live?.soc)} unit="%" />
+              <SummaryCell label="State of health" value={fixed(demoHeader ? demoHeader.soh : live?.soh)} unit="%" />
+              <SummaryCell label="Battery voltage" value={fixed(demoHeader ? demoHeader.voltage : live?.voltage)} unit="V" />
+              <div className="bg-surface px-4 py-3 flex flex-col justify-center gap-1.5 min-w-[110px]">
+                <span className="label-technical">Telemetry</span>
+                <span className="flex items-center gap-2">
+                  <LiveDot tone={streaming ? 'ok' : 'idle'} size={6} live={streaming} />
+                  <span className="text-[12.5px] font-medium text-ink">
+                    {streaming ? 'Streaming' : live ? 'Not reporting' : 'Waiting for first message'}
+                  </span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* ------------------------------------------------ Active fault */}
+        {demoHeader && <FaultBanner fault={demoHeader.fault} className="mb-5" />}
+
+        {/* ------------------------------------------------ Workspace tabs */}
+        <Tabs tabs={tabs} active={activeTab} onChange={(tab) => changeTab(tab as SectionId)} className="mb-6" />
+
+        {/* ------------------------------------------------ Selected view */}
+        <div key={`${activeTab}:${previewing ? 'demo' : 'live'}`} className="animate-fade-in">
+          {DEMO_MODE && previewing ? (
+            renderDemo(demo)
+          ) : previewing ? (
+            <>
+              <DemoDataNotice deviceName={deviceLabel} onExit={() => setPreview(false)} />
+              <DemoFrame>{renderDemo(demo)}</DemoFrame>
+            </>
+          ) : preview || DEMO_MODE ? (
+            <Panel className="py-10 text-center">
+              <p className="text-[13px] text-ink-3">{DEMO_MODE ? 'Loading…' : 'Loading layout preview…'}</p>
+            </Panel>
+          ) : (
+            <>
+              {hasLiveView && (
+                <div className="flex justify-end -mt-2 mb-4">
+                  <Button size="sm" variant="ghost" icon={IconEye} onClick={() => setPreview(true)}>
+                    Preview full layout with demo data
+                  </Button>
+                </div>
+              )}
+              {renderLive()}
+            </>
+          )}
         </div>
-      ) : (
-        <Panel className="p-8 text-center">
-          <p className="text-[14px] font-medium text-ink">No telemetry yet</p>
-          <p className="mt-1.5 text-[13px] text-ink-3">
-            Trends appear once the LTE module with IMEI {device?.device_identifier ?? '—'} starts sending messages.
-          </p>
-        </Panel>
-      )}
+      </div>
     </DashboardLayout>
   );
 }
@@ -173,13 +398,13 @@ function MetaItem({
   );
 }
 
-function ReadingCell({ label, value, unit }: { label: string; value: string; unit: string }) {
+function SummaryCell({ label, value, unit }: { label: string; value: string; unit: string }) {
   return (
-    <div className="bg-surface px-4 py-3.5 flex flex-col justify-center gap-1.5">
+    <div className="bg-surface px-4 py-3 flex flex-col justify-center gap-1.5 min-w-[104px]">
       <span className="label-technical">{label}</span>
       <span className="flex items-baseline gap-0.5">
-        <span className="data-technical text-[22px] font-medium text-ink leading-none">{value}</span>
-        <span className="text-[11px] text-ink-4">{unit}</span>
+        <span className="data-technical text-[19px] font-medium text-ink leading-none">{value}</span>
+        {value !== '—' && <span className="text-[11px] text-ink-4">{unit}</span>}
       </span>
     </div>
   );

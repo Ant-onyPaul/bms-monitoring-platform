@@ -73,6 +73,12 @@ export default function AdminVendorDetails() {
         className="mb-5"
         items={[
           { label: 'Customers', value: customers.length, icon: IconCustomers },
+          {
+            label: 'Active',
+            value: customers.filter((c) => c.status === 'active').length,
+            tone: 'ok',
+          },
+          { label: 'Vendor code', value: vendor?.code ?? '—', icon: IconVendors },
           { label: 'Devices', value: customers.reduce((n, c) => n + c.device_count, 0), icon: IconRack },
           { label: 'Login', value: vendor?.contact_email ?? '—', icon: IconVendors },
         ]}

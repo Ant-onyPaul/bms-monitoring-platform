@@ -1,7 +1,7 @@
 import React from 'react';
 import { Panel } from './ui/Panel';
 import { Badge, LiveDot } from './ui/Badge';
-import { IconCheckCircle, IconWarning, IconFault } from './icons';
+import { IconCheckCircle, IconWarning, IconFault, IconInfo } from './icons';
 
 export interface StatusCardProps {
   status: string;
@@ -40,6 +40,16 @@ const CONFIG = {
     detail: 'A protection has tripped. Inspect the affected module.',
     panel: 'crit' as const,
     text: 'text-crit-ink',
+  },
+  /* The source does not report BMS health. Neither nominal nor alarming —
+     asserting either would be a claim the data cannot support. */
+  unknown: {
+    tone: 'neutral' as const,
+    icon: IconInfo,
+    headline: 'Health not reported',
+    detail: 'The BMS does not report fault or protection status to the platform yet.',
+    panel: 'default' as const,
+    text: 'text-ink-2',
   },
 };
 

@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import ModuleSelector, { ModuleItem } from './ModuleSelector';
-import { getModuleCells, getSystemTelemetry, TOPOLOGY } from '../../data/bmsTelemetry';
-import CellCard, { BmsCell } from './CellCard';
-import SensorCard, { BmsSensor } from './SensorCard';
+import CellCard from './CellCard';
+import SensorCard from './SensorCard';
 import { Panel, PanelHeader } from '../ui/Panel';
 import { Readout, Meter } from '../ui/Metric';
 import { Badge, LiveDot } from '../ui/Badge';
 import PageHeader from '../PageHeader';
+import { RackTelemetry } from '../../types/bms.types';
+import type { RackData } from '../../services/deviceData/types';
 import {
   IconArrowUp,
   IconArrowDown,
@@ -16,15 +17,6 @@ import {
   IconCellGrid,
   IconTemperature,
 } from '../icons';
-
-/**
- * Cells for the selected module, read from the shared telemetry model.
- *
- * This screen previously generated its own unrelated set, so the cell map and
- * the rack extremes table described the same hardware differently. It now reads
- * the same source; the layout of this screen is otherwise untouched, since the
- * company has marked it for future use.
- */
 
 /**
  * Splits a `rack-{n}-mod-{m}` identifier into its 1-indexed positions.
@@ -38,34 +30,14 @@ const parseModuleId = (moduleId?: string) => {
   return match ? { rack: Number(match[1]), module: Number(match[2]) } : null;
 };
 
-const generateDummyCells = (moduleId: string, deviceId: string): BmsCell[] => {
-  const { rack, module } = parseModuleId(moduleId);
-  return getModuleCells(deviceId, rack, module).map((cell) => ({
-    id: `cell-${cell.cell}`,
-    name: `Cell ${String(cell.cell).padStart(2, '0')}`,
-    voltage: cell.voltageMv,
-    health: cell.voltageMv < 3600 || cell.voltageMv > 3750 ? 'Warning' : 'Healthy',
-    balancing: cell.voltageMv > 3705,
-  }));
-};
-
-const generateDummySensors = (moduleId: string): BmsSensor[] => {
-  return [
-    { id: 'ntc-1', name: 'NTC 1', temperature: 29, status: 'Healthy' },
-    { id: 'ntc-2', name: 'NTC 2', temperature: 30, status: 'Healthy' },
-    { id: 'ntc-3', name: 'NTC 3', temperature: 31, status: 'Healthy' },
-    {
-      id: 'ntc-4',
-      name: 'NTC 4',
-      temperature: moduleId === 'rack-1-mod-1' ? 45 : 32,
-      status: moduleId === 'rack-1-mod-1' ? 'Warning' : 'Healthy',
-    },
-  ];
-};
-
 interface CellOverviewProps {
-  deviceId?: string;
+  racks: RackTelemetry[];
+  cellsPerModule: number | null;
+  /** Cells and probes for one module, from the workspace data source. */
+  getModuleDetail: RackData['getModuleDetail'];
+  /** Module to open, e.g. from the rack or module navigator. */
   moduleId?: string;
+  deviceLabel?: string;
 }
 
 /* =============================================================================
@@ -75,28 +47,32 @@ interface CellOverviewProps {
    the map a scale: the spread panel states the module's high, low and delta, so
    the saturation gradient across 52 tiles has known endpoints, and the legend
    makes the encoding explicit rather than something to be inferred.
+
+   Presentation only: cells and probes come from `getModuleDetail`.
    ========================================================================== */
 
-export function CellOverview({ deviceId, moduleId }: CellOverviewProps) {
-  const key = deviceId || 'default';
-  const telemetry = useMemo(() => getSystemTelemetry(key), [key]);
-
+export function CellOverview({
+  racks,
+  cellsPerModule,
+  getModuleDetail,
+  moduleId,
+  deviceLabel,
+}: CellOverviewProps) {
   /* The module list is the rack's actual population, not a fixed set of four.
      Scoping it to the rack that owns the incoming module keeps the
      device → rack → module → cell hierarchy intact and keeps the selector to a
      usable length, while guaranteeing the drilled-into module is always in it. */
   const address = parseModuleId(moduleId);
-  const rack =
-    telemetry.racks.find((r) => r.id === `rack-${address?.rack ?? 1}`) ?? telemetry.racks[0];
+  const rack = racks.find((r) => r.id === `rack-${address?.rack ?? 1}`) ?? racks[0];
 
   const modules: ModuleItem[] = useMemo(
     () =>
-      rack.modules.map((m) => ({
+      (rack?.modules ?? []).map((m) => ({
         id: m.id,
         name: m.name,
-        meta: `${TOPOLOGY.cellsPerModule} cells`,
+        meta: cellsPerModule ? `${cellsPerModule} cells` : undefined,
       })),
-    [rack],
+    [rack, cellsPerModule],
   );
 
   /* Resolve the requested module. The only time we fall back to the first entry
@@ -105,12 +81,12 @@ export function CellOverview({ deviceId, moduleId }: CellOverviewProps) {
   const initialModule = (moduleId && modules.find((m) => m.id === moduleId)) || modules[0];
   const [selectedModule, setSelectedModule] = useState<ModuleItem>(initialModule);
 
-  // Generate data based on selected module
-  const cells = useMemo(
-    () => generateDummyCells(selectedModule.id, deviceId || 'default'),
-    [selectedModule.id, deviceId],
+  const activeModule = rack?.modules.find((m) => m.id === selectedModule?.id);
+  const { cells, sensors } = useMemo(
+    () => (rack && activeModule ? getModuleDetail(rack, activeModule) : { cells: [], sensors: [] }),
+    [getModuleDetail, rack, activeModule],
   );
-  const sensors = useMemo(() => generateDummySensors(selectedModule.id), [selectedModule.id]);
+  if (!rack || !selectedModule || cells.length === 0) return null;
 
   // Calculate stats
   const totalCells = cells.length;
@@ -121,7 +97,7 @@ export function CellOverview({ deviceId, moduleId }: CellOverviewProps) {
   const highestVoltage = Math.max(...voltages);
   const lowestVoltage = Math.min(...voltages);
   const avgVoltage = Math.round(voltages.reduce((a, b) => a + b, 0) / cells.length);
-  const highestTemp = Math.max(...sensors.map((s) => s.temperature));
+  const highestTemp = sensors.length ? Math.max(...sensors.map((s) => s.temperature)) : null;
 
   const delta = highestVoltage - lowestVoltage;
   const spreadTone = delta > 250 ? 'warn' : 'ok';
@@ -142,7 +118,7 @@ export function CellOverview({ deviceId, moduleId }: CellOverviewProps) {
         eyebrow="Module drill-down"
         title="Cell overview"
         description={`Per-cell voltage, balancing state and local probe temperatures for ${rack.name} · ${selectedModule.name}${
-          deviceId ? ` on device ${deviceId}` : ''
+          deviceLabel ? ` on ${deviceLabel}` : ''
         }.`}
         actions={
           <ModuleSelector
@@ -252,17 +228,21 @@ export function CellOverview({ deviceId, moduleId }: CellOverviewProps) {
               <IconTemperature size={13} className="text-ink-4" />
               <span className="label-technical">Peak probe</span>
             </span>
-            <span className="flex items-center gap-2">
-              <LiveDot tone={highestTemp >= 45 ? 'crit' : highestTemp >= 35 ? 'warn' : 'ok'} size={6} />
-              <span
-                className={`data-technical text-[14px] font-medium ${
-                  highestTemp > 45 ? 'text-crit-ink' : highestTemp >= 35 ? 'text-warn-ink' : 'text-ink'
-                }`}
-              >
-                {highestTemp.toFixed(1)}
-                <span className="text-[11px] text-ink-4 ml-0.5">°C</span>
+            {highestTemp === null ? (
+              <span className="text-[12.5px] text-ink-4">Not reported</span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <LiveDot tone={highestTemp >= 45 ? 'crit' : highestTemp >= 35 ? 'warn' : 'ok'} size={6} />
+                <span
+                  className={`data-technical text-[14px] font-medium ${
+                    highestTemp > 45 ? 'text-crit-ink' : highestTemp >= 35 ? 'text-warn-ink' : 'text-ink'
+                  }`}
+                >
+                  {highestTemp.toFixed(1)}
+                  <span className="text-[11px] text-ink-4 ml-0.5">°C</span>
+                </span>
               </span>
-            </span>
+            )}
           </div>
         </Panel>
       </div>

@@ -1,6 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { api } from '../lib/api';
+import { Overview } from '../types/database.types';
+import { NavAlert, NavAlertTone, alertIndicator, toNavAlerts } from '../services/navigation';
+import { relativeTime } from './tableCells';
 import CommandPalette from './CommandPalette';
 import ThemeToggle from './ThemeToggle';
 import { Badge, LiveDot } from './ui/Badge';
@@ -34,11 +38,32 @@ const SEGMENT_LABELS: Record<string, string> = {
   devices: 'Devices',
 };
 
-const NOTIFICATIONS = [
-  { id: 1, tone: 'crit' as const, icon: IconFault, title: 'Cell 08 under-voltage', context: 'BMS-A001 · Rack 1 / Module 01', time: '2m' },
-  { id: 2, tone: 'warn' as const, icon: IconWarning, title: 'Module 03 temperature high', context: 'BMS-A001 · Rack 1', time: '18m' },
-  { id: 3, tone: 'info' as const, icon: IconInfo, title: 'Telemetry link re-established', context: 'BMS-A002 · Gateway', time: '1h' },
-];
+const ALERT_ICON: Record<NavAlertTone, typeof IconInfo> = {
+  crit: IconFault,
+  warn: IconWarning,
+  info: IconInfo,
+};
+
+/* Alerts come from /api/overview — the same, role-scoped feed as the
+   dashboards' alert panels. Loaded with the page and refreshed each time the
+   bell is opened. */
+function useNavAlerts(enabled: boolean) {
+  const [alerts, setAlerts] = useState<NavAlert[] | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  const refresh = useCallback(() => {
+    if (!enabled) return;
+    api<Overview>('/api/overview')
+      .then((overview) => {
+        setAlerts(toNavAlerts(overview.alerts ?? [], (iso) => relativeTime(iso)));
+        setFailed(false);
+      })
+      .catch(() => setFailed(true));
+  }, [enabled]);
+
+  useEffect(refresh, [refresh]);
+  return { alerts, failed, refresh };
+}
 
 export default function Navbar({ toggleSidebar }: any) {
   const location = useLocation();
@@ -49,6 +74,8 @@ export default function Navbar({ toggleSidebar }: any) {
   const [userOpen, setUserOpen] = useState(false);
 
   const notificationsRef = useRef<HTMLDivElement>(null);
+  const { alerts, failed: alertsFailed, refresh: refreshAlerts } = useNavAlerts(Boolean(profile));
+  const indicator = alertIndicator(alerts);
   const userRef = useRef<HTMLDivElement>(null);
 
   /* ⌘K / Ctrl-K opens the palette from anywhere in the app. */
@@ -195,6 +222,7 @@ export default function Navbar({ toggleSidebar }: any) {
             <button
               type="button"
               onClick={() => {
+                if (!notificationsOpen) refreshAlerts();
                 setNotificationsOpen((o) => !o);
                 setUserOpen(false);
               }}
@@ -205,9 +233,11 @@ export default function Navbar({ toggleSidebar }: any) {
                 ${notificationsOpen ? 'bg-veil-3 text-ink' : 'text-ink-3 hover:bg-veil-2 hover:text-ink-2'}`}
             >
               <IconBell size={17} />
-              <span className="absolute top-1.5 right-1.5">
-                <LiveDot tone="crit" size={6} live />
-              </span>
+              {indicator && indicator !== 'info' && (
+                <span className="absolute top-1.5 right-1.5">
+                  <LiveDot tone={indicator} size={6} live />
+                </span>
+              )}
             </button>
 
             {notificationsOpen && (
@@ -217,13 +247,20 @@ export default function Navbar({ toggleSidebar }: any) {
               >
                 <div className="flex items-center justify-between px-4 py-3 border-b border-line">
                   <span className="label-technical">Active alerts</span>
-                  <Badge tone="crit" size="xs">
-                    {NOTIFICATIONS.length}
-                  </Badge>
+                  {alerts && (
+                    <Badge tone={indicator ?? 'neutral'} size="xs">
+                      {alerts.length}
+                    </Badge>
+                  )}
                 </div>
+                {(!alerts || alerts.length === 0) && (
+                  <p className="px-4 py-6 text-center text-[12.5px] text-ink-3">
+                    {alertsFailed ? 'Could not load alerts.' : alerts ? 'No active alerts.' : 'Loading alerts…'}
+                  </p>
+                )}
                 <ul className="max-h-80 overflow-y-auto scrollbar-fine divide-y divide-line">
-                  {NOTIFICATIONS.map((item) => {
-                    const Icon = item.icon;
+                  {(alerts ?? []).map((item) => {
+                    const Icon = ALERT_ICON[item.tone];
                     const iconTone =
                       item.tone === 'crit'
                         ? 'text-crit'

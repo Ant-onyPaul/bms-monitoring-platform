@@ -130,8 +130,12 @@ export default function Login() {
                 administrator.
               </p>
 
-                <form className="space-y-4 mt-7" onSubmit={handleLogin}>
-                  {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
+              <form className="space-y-4 mt-7" onSubmit={handleLogin}>
+                {error && (
+                  <p role="alert" className="text-[13px] text-crit-ink">
+                    {error}
+                  </p>
+                )}
                 <InputField
                   id="email"
                   label="Email Address"

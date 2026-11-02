@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Device } from '../../types/database.types';
-import { SystemTelemetry } from '../../types/bms.types';
-import { TELEMETRY_PROVENANCE, TOPOLOGY } from '../../data/bmsTelemetry';
+import type { DataSourceRow, SystemInfoData } from '../../services/deviceData/types';
 import { useAuth } from '../../hooks/useAuth';
 import { Panel, PanelHeader } from '../ui/Panel';
 import { Badge } from '../ui/Badge';
@@ -28,10 +27,9 @@ import {
    and how it is wired.
 
    On configurability — the company asked for system information to be editable
-   by Vendor/Admin. The current schema does expose the right columns
-   (devices.name, devices.location, devices.device_type), but this application
-   has no write path: it runs against local mock arrays with VITE_MOCK_AUTH, and
-   no update mutation exists anywhere in the codebase.
+   by Vendor/Admin. The device record carries the right fields (name, location,
+   device_type), but the API has no device update endpoint yet, so there is no
+   write path.
 
    Rather than showing a Save button that silently does nothing, the dialog is
    built to its final shape with the write disabled and the exact missing
@@ -40,13 +38,14 @@ import {
 
 interface SystemInformationProps {
   device: Device;
-  telemetry: SystemTelemetry;
+  /** Figures and data-source list from the workspace source (live or demo). */
+  info: SystemInfoData;
   className?: string;
 }
 
 export default function SystemInformation({
   device,
-  telemetry,
+  info,
   className = '',
 }: SystemInformationProps) {
   const { profile } = useAuth();
@@ -87,15 +86,17 @@ export default function SystemInformation({
               location={device.location}
               deviceName={device.name}
               deviceIdentifier={device.device_identifier}
+              siting={info.siting}
               variant="inline"
             />
           </div>
           <InfoCell
             icon={IconVoltage}
             label="System voltage"
-            value={`${telemetry.batteryVoltage.toFixed(1)} V`}
+            value={info.systemVoltage === null ? '—' : `${info.systemVoltage.toFixed(1)} V`}
             emphasis
             mono
+            muted={info.systemVoltage === null}
           />
         </div>
 
@@ -105,17 +106,19 @@ export default function SystemInformation({
           <InfoCell
             icon={IconRack}
             label="Configuration"
-            value={`${TOPOLOGY.racks} racks · ${TOPOLOGY.racks * TOPOLOGY.modulesPerRack} modules`}
+            value={info.configuration ?? 'Not reported'}
+            muted={info.configuration === null}
           />
           <InfoCell
             icon={IconEnergy}
             label="Rated capacity"
-            value={`${telemetry.ratedEnergyKwh.toLocaleString()} kWh`}
-            mono
+            value={info.ratedKwh === null ? 'Not reported' : `${info.ratedKwh.toLocaleString()} kWh`}
+            mono={info.ratedKwh !== null}
+            muted={info.ratedKwh === null}
           />
         </dl>
 
-        <DataSourceDisclosure />
+        <DataSourceDisclosure rows={info.dataSources} />
       </Panel>
 
       <SystemConfigDialog
@@ -167,15 +170,22 @@ function InfoCell({
 /* -----------------------------------------------------------------------------
    DataSourceDisclosure
 
-   Makes the simulation boundary visible in the product rather than burying it
-   in a hand-off document. A reviewer can see at a glance which figures are
-   backed by the schema today and which are waiting on it.
+   Makes the data boundary visible in the product rather than burying it in a
+   hand-off document. A reviewer can see at a glance which figures come from
+   the API today and which are waiting on it.
    -------------------------------------------------------------------------- */
 
-function DataSourceDisclosure() {
+const SOURCE_TONE: Record<DataSourceRow['status'], 'ok' | 'warn' | 'neutral'> = {
+  live: 'ok',
+  demo: 'warn',
+  unavailable: 'neutral',
+};
+
+function DataSourceDisclosure({ rows }: { rows: DataSourceRow[] }) {
   const [open, setOpen] = useState(false);
 
-  const pending = TELEMETRY_PROVENANCE.filter((f) => f.provenance !== 'mapped').length;
+  const pending = rows.filter((f) => f.status !== 'live').length;
+  const allDemo = rows.length > 0 && rows.every((f) => f.status === 'demo');
 
   return (
     <div className="border-t border-line">
@@ -190,7 +200,10 @@ function DataSourceDisclosure() {
         <IconInfo size={13} className="text-ink-4 shrink-0" />
         <span className="text-[12.5px] text-ink-2 flex-1">
           Data sources
-          <span className="text-ink-4"> · {pending} metrics awaiting backend fields</span>
+          <span className="text-ink-4">
+            {' · '}
+            {allDemo ? 'all values in this preview are simulated' : `${pending} metrics awaiting backend fields`}
+          </span>
         </span>
         <IconChevronDown
           size={13}
@@ -201,30 +214,20 @@ function DataSourceDisclosure() {
 
       {open && (
         <ul className="divide-y divide-line border-t border-line animate-fade-in">
-          {TELEMETRY_PROVENANCE.map((field) => (
+          {rows.map((field) => (
             <li key={field.label} className="px-5 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-[12.5px] font-medium text-ink">{field.label}</p>
                   <p className="data-technical text-[11px] text-ink-4 mt-1 truncate">
-                    {field.backingField}
+                    {field.source}
                   </p>
                   {field.note && (
                     <p className="text-[11.5px] text-ink-3 mt-1.5 leading-relaxed">{field.note}</p>
                   )}
                 </div>
-                <Badge
-                  tone={
-                    field.provenance === 'mapped'
-                      ? 'ok'
-                      : field.provenance === 'derived'
-                        ? 'info'
-                        : 'warn'
-                  }
-                  size="xs"
-                  className="shrink-0 mt-0.5"
-                >
-                  {field.provenance}
+                <Badge tone={SOURCE_TONE[field.status]} size="xs" className="shrink-0 mt-0.5">
+                  {field.status}
                 </Badge>
               </div>
             </li>
@@ -306,12 +309,11 @@ function SystemConfigDialog({
         >
           <IconInfo size={14} className="text-info-ink shrink-0 mt-0.5" />
           <p className="text-[12px] text-info-ink leading-relaxed">
-            <span className="font-semibold">Saving is not yet connected.</span> The columns exist
-            (<span className="data-technical">devices.name</span>,{' '}
-            <span className="data-technical">devices.location</span>,{' '}
-            <span className="data-technical">devices.device_type</span>) but this build reads from
-            local mock data and has no update mutation. The form is left editable so the intended
-            flow can be reviewed.
+            <span className="font-semibold">Saving is not yet connected.</span> The device record
+            has these fields (<span className="data-technical">name</span>,{' '}
+            <span className="data-technical">location</span>,{' '}
+            <span className="data-technical">device_type</span>) but the API has no device update
+            endpoint yet. The form is left editable so the intended flow can be reviewed.
           </p>
         </div>
       </div>

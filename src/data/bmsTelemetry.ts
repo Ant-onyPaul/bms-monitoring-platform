@@ -146,6 +146,51 @@ const MODULE_ANOMALIES: ModuleAnomaly[] = [
 ];
 
 /* -----------------------------------------------------------------------------
+   Per-device variation
+
+   Averaged over thousands of cells, every unit converged on the same pack SOC
+   and carried the same four anomalies, so a fleet of simulated devices read as
+   copies of one. Each device now gets its own seeded offsets and its own subset
+   of the anomaly story. The 'default' key keeps the original, full story, and
+   per-cell generation is untouched, so a given device still renders the same
+   on every visit.
+   -------------------------------------------------------------------------- */
+
+interface DeviceVariation {
+  socOffset: number;
+  sohOffset: number;
+  tempOffset: number;
+  anomalies: ModuleAnomaly[];
+  /** The rack 1 / module 1 / cell 12 under-voltage cell. */
+  weakCell: boolean;
+  /** Net power flow: the original rack pattern (discharging), reversed (charging), or idle. */
+  flow: 'discharge' | 'charge' | 'idle';
+}
+
+const variationCache = new Map<string, DeviceVariation>();
+
+function variationFor(deviceId: string): DeviceVariation {
+  const cached = variationCache.get(deviceId);
+  if (cached) return cached;
+  let variation: DeviceVariation;
+  if (deviceId === 'default') {
+    variation = { socOffset: 0, sohOffset: 0, tempOffset: 0, anomalies: MODULE_ANOMALIES, weakCell: true, flow: 'discharge' };
+  } else {
+    const rng = makeRng(hashSeed(`${deviceId}:variation`));
+    variation = {
+      socOffset: -32 + rng() * 42,
+      sohOffset: -5 + rng() * 6,
+      tempOffset: -3 + rng() * 6,
+      anomalies: MODULE_ANOMALIES.filter(() => rng() < 0.4),
+      weakCell: rng() < 0.35,
+      flow: ((r) => (r < 0.55 ? 'discharge' : r < 0.85 ? 'charge' : 'idle'))(rng()),
+    };
+  }
+  variationCache.set(deviceId, variation);
+  return variation;
+}
+
+/* -----------------------------------------------------------------------------
    Cell generation
    -------------------------------------------------------------------------- */
 
@@ -165,14 +210,15 @@ function generateCells(
   anomaly: ModuleAnomaly | undefined,
 ): GeneratedCell[] {
   const rng = makeRng(hashSeed(`${deviceId}:r${rackIndex}:m${moduleIndex}:cells`));
+  const variation = variationFor(deviceId);
   const cells: GeneratedCell[] = [];
 
   /* Module-to-module variance is kept inside the configured balancing limits so
      that a healthy rack reads healthy. If nominal spread already exceeded the
      limit, the "outside limit" flag would fire on every rack and mean nothing. */
-  const baseTemp = anomaly?.kind === 'overTemp' ? 37.4 : 28 + rng() * 3;
-  const baseSoc = 80 + rng() * 3;
-  const baseSoh = 96 + rng() * 2;
+  const baseTemp = anomaly?.kind === 'overTemp' ? 37.4 : 28 + rng() * 3 + variation.tempOffset;
+  const baseSoc = Math.min(97, Math.max(6, 80 + rng() * 3 + variation.socOffset));
+  const baseSoh = Math.min(99.5, 96 + rng() * 2 + variation.sohOffset);
 
   for (let c = 1; c <= TOPOLOGY.cellsPerModule; c += 1) {
     let voltageMv = 3690 + Math.round(rng() * 24);
@@ -186,7 +232,7 @@ function generateCells(
       soc = baseSoc - 11;
       soh = baseSoh - 5.5;
     }
-    if (rackIndex === 1 && moduleIndex === 1 && c === 12) {
+    if (variation.weakCell && rackIndex === 1 && moduleIndex === 1 && c === 12) {
       voltageMv = 3420;
       soc = baseSoc - 12.5;
       soh = baseSoh - 6.2;
@@ -216,7 +262,7 @@ function generateCells(
  * about the same hardware.
  */
 export function getModuleCells(deviceId: string, rackIndex: number, moduleIndex: number) {
-  const anomaly = MODULE_ANOMALIES.find((a) => a.rack === rackIndex && a.module === moduleIndex);
+  const anomaly = variationFor(deviceId).anomalies.find((a) => a.rack === rackIndex && a.module === moduleIndex);
   return generateCells(deviceId, rackIndex, moduleIndex, anomaly);
 }
 
@@ -285,7 +331,7 @@ function generateRack(deviceId: string, rackIndex: number): RackTelemetry {
   const allCells: GeneratedCell[] = [];
 
   for (let m = 1; m <= TOPOLOGY.modulesPerRack; m += 1) {
-    const anomaly = MODULE_ANOMALIES.find((a) => a.rack === rackIndex && a.module === m);
+    const anomaly = variationFor(deviceId).anomalies.find((a) => a.rack === rackIndex && a.module === m);
     const cells = generateCells(deviceId, rackIndex, m, anomaly);
     allCells.push(...cells);
 
@@ -335,6 +381,9 @@ function generateRack(deviceId: string, rackIndex: number): RackTelemetry {
   if (rackIndex === 2) current = -round(38 + rng() * 10, 1);
   else if (rackIndex === 4) current = round((rng() - 0.5) * 0.6, 1);
   else current = round(42 + rng() * 14, 1);
+  const { flow } = variationFor(deviceId);
+  if (flow === 'charge') current = -current;
+  else if (flow === 'idle') current = round(current / 200, 2);
 
   const state: OperatingStateCode = deriveOperatingState(current);
   const power = round((voltage * current) / 1000, 2);
@@ -342,7 +391,7 @@ function generateRack(deviceId: string, rackIndex: number): RackTelemetry {
   const soc = round(modules.reduce((s, m) => s + m.soc, 0) / modules.length, 1);
   const soh = round(modules.reduce((s, m) => s + m.soh, 0) / modules.length, 1);
 
-  const rackAnomaly = MODULE_ANOMALIES.filter((a) => a.rack === rackIndex).sort((a, b) =>
+  const rackAnomaly = variationFor(deviceId).anomalies.filter((a) => a.rack === rackIndex).sort((a, b) =>
     a.kind === 'fault' ? -1 : b.kind === 'fault' ? 1 : 0,
   )[0];
 
